@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="googlebot" content="noindex, nofollow">
+  <title>아오츠바 아카이브</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand-block">
+        <div class="brand archive-editor-trigger" id="archiveEditorTrigger" role="button" tabindex="0" aria-controls="postEditor" aria-expanded="false">아오츠바 아카이브</div>
+        <div class="subtitle">미야케 아오이X아오야기 츠바키</div>
+      </div>
+
+      <div class="header-actions">
+        <button type="button" class="ghost-btn" id="seriesManageBtn">시리즈</button>
+        <button type="button" class="primary-btn" id="writeBtn">새 포스트</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="page-shell">
+
+
+    <section class="section-block">
+      <div class="section-head">
+        <div>
+          <p class="section-kicker">SERIES</p>
+          <h2>시리즈</h2>
+        </div>
+        <button type="button" class="text-btn" id="showAllSeriesBtn">전체 보기</button>
+      </div>
+
+      <div class="series-scroller" id="seriesGrid" aria-live="polite"></div>
+    </section>
+
+    <footer class="site-footer">
+      <span>아오츠바 아카이브.</span>
+    </footer>
+  </main>
+
+
+
+  <section class="post-editor" id="postEditor" aria-hidden="true">
+    <div class="post-editor-shell">
+      <div class="post-editor-top">
+        <div class="post-editor-heading">포스트 작성실</div>
+        <div class="post-editor-actions">
+          <span class="editor-save-state" id="editorSaveState">자동 저장</span>
+          <div class="editor-action-group">
+            <button type="button" class="ghost-btn" id="editorTempSaveBtn">임시저장</button>
+            <button type="button" class="ghost-btn" id="editorTempLoadBtn">불러오기</button>
+          </div>
+          <div class="editor-action-group">
+            <button type="button" class="ghost-btn" id="editorCloseBtn">닫기</button>
+            <button type="button" class="primary-btn" id="editorPublishBtn">게시 준비</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="post-editor-meta">
+        <input id="editorTitle" class="editor-title-input" type="text" placeholder="제목을 입력하세요" aria-label="포스트 제목">
+        <div class="editor-meta-row">
+          <select id="editorSeries" aria-label="시리즈 선택">
+            <option value="">시리즈 없음</option>
+          </select>
+          <input id="editorTags" type="text" placeholder="태그를 쉼표로 구분해서 입력" aria-label="태그">
+        </div>
+        <div class="editor-format-row">
+          <span class="editor-format-label">본문</span>
+          <select id="editorFontFamily" aria-label="본문 폰트">
+            <option value="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif">기본 폰트</option>
+            <option value="'Apple SD Gothic Neo','Noto Sans KR',sans-serif">애플 고딕</option>
+            <option value="Georgia,'Times New Roman','Noto Serif KR',serif">세리프</option>
+            <option value="'Noto Serif KR',serif">본명조</option>
+            <option value="'KoPubWorldDotum','Noto Sans KR',sans-serif">KoPub 돋움</option>
+            <option value="'KoPubWorldBatang','Noto Serif KR',serif">KoPub 바탕</option>
+          </select>
+          <select id="editorFontSize" aria-label="본문 글자 크기">
+            <option value="9">9pt</option>
+            <option value="10">10pt</option>
+            <option value="11">11pt</option>
+            <option value="12">12pt</option>
+            <option value="13">13pt</option>
+            <option value="14">14pt</option>
+          </select>
+        </div>
+      </div>
+
+      <textarea id="editorBody" class="editor-body" placeholder="이야기를 시작하세요." aria-label="포스트 본문"></textarea>
+    </div>
+  </section>
+
+  <div class="preview-modal" id="previewModal" hidden>
+    <div class="preview-backdrop" data-close-preview></div>
+    <article class="preview-sheet" role="dialog" aria-modal="true" aria-labelledby="previewTitle">
+      <div class="preview-top">
+        <span class="preview-kind" id="previewKind">POST</span>
+        <button type="button" class="preview-close" data-close-preview>닫기</button>
+      </div>
+      <div id="previewContent"></div>
+    </article>
+  </div>
+
+  
+  <img class="aotsuba-bg is-off" id="aotsubaBg" src="./aotsuba-bg.png" alt="" aria-hidden="true">
+  <button type="button" class="bg-image-toggle" id="bgImageToggle" aria-pressed="false">이미지 OFF</button>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
