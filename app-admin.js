@@ -196,12 +196,6 @@
     openLogin();
   },true);
 
-  document.querySelector("#archiveEditorTrigger")?.addEventListener("click",e=>{
-    if(getToken()) return;
-    e.preventDefault();
-    e.stopImmediatePropagation();
-  },true);
-
   /* 기존 포스트의 '수정 저장'은 기존 화면 로직이 끝난 뒤 GitHub에도 저장 */
   document.addEventListener("click",e=>{
     if(!getToken()) return;

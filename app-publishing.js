@@ -141,10 +141,10 @@
     },true);
   }
 
-  ["#writeBtn","#archiveEditorTrigger","#editorCloseBtn"].forEach(sel=>{
+  ["#writeBtn","#editorCloseBtn"].forEach(sel=>{
     document.querySelector(sel)?.addEventListener("click",()=>{
       setTimeout(()=>{
-        const heading=document.querySelector(".post-editor-heading")?.textContent||"";
+        const heading=document.querySelector(".post-editor-subtitle")?.textContent||"";
         if(heading.includes("작성실") && publishBtn) publishBtn.textContent="게시!";
       },0);
     });

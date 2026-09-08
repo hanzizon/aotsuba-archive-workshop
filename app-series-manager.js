@@ -11,7 +11,7 @@
     <div class="series-manager-shell">
       <div class="series-manager-top">
         <div class="series-manager-brand-block">
-          <div class="series-manager-brand">아오츠바 아카이브</div>
+          <div class="series-manager-brand archive-home-link" role="button" tabindex="0" data-archive-home aria-label="아오츠바 아카이브 홈으로 이동">아오츠바 아카이브</div>
           <div class="series-manager-subtitle">시리즈 관리</div>
         </div>
         <button type="button" class="ghost-btn series-manager-close">닫기</button>

@@ -38,6 +38,16 @@ button{cursor:pointer}
   gap:18px;
 }
 .brand{font-size:18px;font-weight:850;letter-spacing:-.03em;color:var(--text)}
+.archive-home-link{
+  cursor:pointer;
+  width:max-content;
+  max-width:100%;
+  border-radius:4px;
+}
+.archive-home-link:focus-visible{
+  outline:2px solid var(--accent);
+  outline-offset:4px;
+}
 .subtitle{margin-top:4px;font-size:12px;color:var(--muted)}
 
 .header-actions{display:flex;gap:8px}
@@ -418,6 +428,13 @@ button{cursor:pointer}
   gap:12px;
   padding-bottom:12px;
   border-bottom:1px solid var(--line);
+}
+.preview-brand-block{min-width:0}
+.preview-archive-brand{
+  font-size:calc(13pt + 1px);
+  font-weight:850;
+  letter-spacing:-.03em;
+  color:var(--text);
 }
 .preview-kind{
   font-size:10px;

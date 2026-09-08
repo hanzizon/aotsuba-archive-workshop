@@ -376,10 +376,16 @@
 }
 
 /* 작성실 헤더 */
+.post-editor-brand-block{min-width:0}
 .post-editor-heading{
-  font-size:15px;
-  font-weight:800;
+  font-size:calc(13pt + 1px);
+  font-weight:850;
   color:var(--text);
+}
+.post-editor-subtitle{
+  margin-top:4px;
+  font-size:12px;
+  color:var(--muted);
 }
 .post-editor-actions{
   display:flex;

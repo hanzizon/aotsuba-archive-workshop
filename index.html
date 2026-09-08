@@ -7,11 +7,11 @@
   <meta name="googlebot" content="noindex, nofollow">
   <title>아오츠바 아카이브</title>
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./styles-main.css?v=20260908-series-meta1">
-  <link rel="stylesheet" href="./styles-editor.css?v=20260908-series-meta1">
+  <link rel="stylesheet" href="./styles-main.css?v=20260908-title-home1">
+  <link rel="stylesheet" href="./styles-editor.css?v=20260908-title-home1">
   <link rel="stylesheet" href="./styles-workshop-sync.css?v=20260908-series-meta1">
   <link rel="stylesheet" href="./styles-enhancements.css?v=20260908-series-meta1">
-  <link rel="stylesheet" href="./styles-series-manager.css?v=20260908-series-meta1">
+  <link rel="stylesheet" href="./styles-series-manager.css?v=20260908-title-home1">
   <link rel="stylesheet" href="./styles-admin.css?v=20260908-series-meta1">
   <link rel="stylesheet" href="./styles-archive-features.css?v=20260908-series-meta1">
   <style>
@@ -43,7 +43,7 @@
   <header class="site-header">
     <div class="header-inner">
       <div class="brand-block">
-        <div class="brand archive-editor-trigger" id="archiveEditorTrigger" role="button" tabindex="0" aria-controls="postEditor" aria-expanded="false">아오츠바 아카이브</div>
+        <div class="brand archive-home-link" id="archiveEditorTrigger" role="button" tabindex="0" data-archive-home aria-label="아오츠바 아카이브 홈으로 이동">아오츠바 아카이브</div>
         <div class="subtitle">미야케 아오이X아오야기 츠바키</div>
       </div>
 
@@ -75,7 +75,10 @@
   <section class="post-editor" id="postEditor" aria-hidden="true">
     <div class="post-editor-shell">
       <div class="post-editor-top">
-        <div class="post-editor-heading">포스트 작성실</div>
+        <div class="post-editor-brand-block">
+          <div class="post-editor-heading archive-home-link" role="button" tabindex="0" data-archive-home aria-label="아오츠바 아카이브 홈으로 이동">아오츠바 아카이브</div>
+          <div class="post-editor-subtitle">포스트 작성실</div>
+        </div>
         <div class="post-editor-actions">
           <span class="editor-save-state" id="editorSaveState">자동 저장</span>
           <div class="editor-action-group">
@@ -126,7 +129,10 @@
     <div class="preview-backdrop" data-close-preview></div>
     <article class="preview-sheet" role="dialog" aria-modal="true" aria-labelledby="previewTitle">
       <div class="preview-top">
-        <span class="preview-kind" id="previewKind">POST</span>
+        <div class="preview-brand-block">
+          <div class="preview-archive-brand archive-home-link" id="previewTitle" role="button" tabindex="0" data-archive-home aria-label="아오츠바 아카이브 홈으로 이동">아오츠바 아카이브</div>
+          <span class="preview-kind" id="previewKind"></span>
+        </div>
         <button type="button" class="preview-close" data-close-preview>닫기</button>
       </div>
       <div id="previewContent"></div>
@@ -138,11 +144,11 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="./app-core.js?v=20260908-series-meta1"></script>
-  <script src="./app-editor.js?v=20260908-series-meta1"></script>
-  <script src="./app-admin.js?v=20260908-series-meta1"></script>
+  <script src="./app-core.js?v=20260908-title-home1"></script>
+  <script src="./app-editor.js?v=20260908-title-home1"></script>
+  <script src="./app-admin.js?v=20260908-title-home1"></script>
   <script src="./app-formatting.js?v=20260908-series-meta1"></script>
-  <script src="./app-editor-fix.js?v=20260908-series-meta1"></script>
+  <script src="./app-editor-fix.js?v=20260908-title-home1"></script>
   <script>
     (()=>{
       const POST_EDIT_KEY="aotsubaArchive.postEdits.v1";
@@ -182,7 +188,7 @@
 
       function setEditorMode(post=null){
         editingPostId=post?.id || null;
-        const heading=document.querySelector(".post-editor-heading");
+        const heading=document.querySelector(".post-editor-subtitle");
         const submit=document.querySelector("#editorPublishBtn");
         if(heading) heading.textContent=editingPostId ? "포스트 수정실" : "포스트 작성실";
         if(submit) submit.textContent=editingPostId ? "수정 저장" : "게시!";
@@ -204,7 +210,6 @@
         window.__archiveRichSkipNextSync=true;
         editor.classList.add("open");
         editor.setAttribute("aria-hidden","false");
-        document.querySelector("#archiveEditorTrigger")?.setAttribute("aria-expanded","true");
         document.body.style.overflow="hidden";
         setTimeout(()=>{
           if(window.setArchiveEditorHtml){
@@ -269,13 +274,13 @@
 
       document.querySelector("#editorCloseBtn")?.addEventListener("click",()=>setEditorMode(null),true);
       document.querySelector("#writeBtn")?.addEventListener("click",()=>setEditorMode(null),true);
-      document.querySelector("#archiveEditorTrigger")?.addEventListener("click",()=>setEditorMode(null),true);
+      document.addEventListener("archive-home",()=>setEditorMode(null));
 
       loadPostEdits();
     })();
   </script>
-  <script src="./app-series-manager.js?v=20260908-series-meta1"></script>
-  <script src="./app-publishing.js?v=20260908-series-meta1"></script>
+  <script src="./app-series-manager.js?v=20260908-title-home1"></script>
+  <script src="./app-publishing.js?v=20260908-title-home1"></script>
   <script src="./app-series-order.js?v=20260908-series-meta1"></script>
   <script src="./app-post-tools.js?v=20260908-series-meta1"></script>
 </body>

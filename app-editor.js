@@ -193,7 +193,6 @@ function openPostEditor(){
   const editor=$("#postEditor");
   editor.classList.add("open");
   editor.setAttribute("aria-hidden","false");
-  $("#archiveEditorTrigger")?.setAttribute("aria-expanded","true");
   document.body.style.overflow="hidden";
   setTimeout(()=>$("#editorTitle")?.focus(),40);
 }
@@ -203,17 +202,9 @@ function closePostEditor(){
   const editor=$("#postEditor");
   editor.classList.remove("open");
   editor.setAttribute("aria-hidden","true");
-  $("#archiveEditorTrigger")?.setAttribute("aria-expanded","false");
   document.body.style.overflow="";
 }
 
-$("#archiveEditorTrigger")?.addEventListener("click",openPostEditor);
-$("#archiveEditorTrigger")?.addEventListener("keydown",e=>{
-  if(e.key==="Enter"||e.key===" "){
-    e.preventDefault();
-    openPostEditor();
-  }
-});
 $("#editorCloseBtn")?.addEventListener("click",closePostEditor);
 ["#editorTitle","#editorSeries","#editorTags","#editorBody","#editorFontFamily","#editorFontSize"].forEach(sel=>{
   $(sel)?.addEventListener("input",()=>{

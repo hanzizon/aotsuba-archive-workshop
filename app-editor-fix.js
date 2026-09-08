@@ -34,7 +34,6 @@
   normalizeEditorBody();
 
   document.querySelector("#writeBtn")?.addEventListener("click",()=>setTimeout(normalizeEditorBody,0));
-  document.querySelector("#archiveEditorTrigger")?.addEventListener("click",()=>setTimeout(normalizeEditorBody,0));
   document.addEventListener("click",e=>{
     if(e.target.closest(".post-edit-btn,#previewTopEditBtn")){
       setTimeout(normalizeEditorBody,0);

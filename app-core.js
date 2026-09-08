@@ -23,6 +23,52 @@ const state = {
 
 const $ = (sel) => document.querySelector(sel);
 
+function goArchiveHome(){
+  if(typeof saveEditorDraft==="function" && document.querySelector("#postEditor.open")) saveEditorDraft();
+
+  const editor=document.querySelector("#postEditor");
+  editor?.classList.remove("open");
+  editor?.setAttribute("aria-hidden","true");
+
+  const manager=document.querySelector("#seriesManager");
+  manager?.classList.remove("open");
+  manager?.setAttribute("aria-hidden","true");
+  const createArea=manager?.querySelector("#seriesCreateArea");
+  if(createArea) createArea.innerHTML="";
+
+  const preview=document.querySelector("#previewModal");
+  if(preview) preview.hidden=true;
+  window.archiveDeleteSelection?.reset?.();
+
+  const login=document.querySelector("#adminLoginModal");
+  if(login) login.hidden=true;
+  const password=document.querySelector("#adminPasswordInput");
+  if(password) password.value="";
+
+  state.query="";
+  state.seriesId="";
+  state.sort="latest";
+  document.dispatchEvent(new CustomEvent("archive-home"));
+  document.body.style.removeProperty("overflow");
+  document.body.classList.remove("modal-open","no-scroll","scroll-locked");
+  window.scrollTo(0,0);
+  requestAnimationFrame(()=>window.scrollTo(0,0));
+}
+
+window.goArchiveHome=goArchiveHome;
+
+function activateArchiveHome(event){
+  const title=event.target.closest?.("[data-archive-home]");
+  if(!title) return;
+  if(event.type==="keydown" && event.key!=="Enter" && event.key!==" ") return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  goArchiveHome();
+}
+
+document.addEventListener("click",activateArchiveHome,true);
+document.addEventListener("keydown",activateArchiveHome,true);
+
 function toast(message){
   const el = $("#toast");
   el.textContent = message;
