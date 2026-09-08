@@ -1,4 +1,4 @@
-/* 새 포스트 게시: 브라우저 로컬 저장 기반 */
+/* 새 포스트 게시: GitHub 영구 저장 + 로컬 보조 저장 */
 (() => {
   const PUBLISHED_KEY = "aotsubaArchive.publishedPosts.v1";
   const POST_EDIT_KEY = "aotsubaArchive.postEdits.v1";
@@ -72,7 +72,7 @@
   if(publishBtn){
     publishBtn.textContent="게시!";
 
-    publishBtn.addEventListener("click",e=>{
+    publishBtn.addEventListener("click",async e=>{
       if(publishBtn.textContent.trim()==="수정 저장") return;
 
       e.preventDefault();
@@ -100,7 +100,7 @@
 
       const now=new Date();
       const post={
-        id:`post-local-${now.getTime()}`,
+        id:`post-${now.getTime()}`,
         title,
         excerpt:body.replace(/\s+/g," ").trim().slice(0,120),
         body,
@@ -111,20 +111,32 @@
         tags
       };
 
-      const saved=readPublished();
-      saved.push(post);
-      if(!writePublished(saved)){
-        toast("게시하지 못했습니다.");
-        return;
-      }
-
+      const previousPosts=state.posts.slice();
       state.posts.push(post);
       renderAll();
-      clearEditorAfterPublish();
-      closePostEditor();
-      try{ localStorage.removeItem("aotsubaArchive.editorDraft.v1"); }catch(_e){}
-      toast("게시했습니다!");
-      setTimeout(()=>openPostPreview(post),100);
+      publishBtn.disabled=true;
+
+      try{
+        if(typeof window.archiveSavePosts!=="function") throw new Error("remote_save_unavailable");
+        await window.archiveSavePosts(state.posts);
+
+        const saved=readPublished();
+        saved.push(post);
+        writePublished(saved);
+
+        clearEditorAfterPublish();
+        closePostEditor();
+        try{ localStorage.removeItem("aotsubaArchive.editorDraft.v1"); }catch(_e){}
+        toast("게시했습니다!");
+        setTimeout(()=>openPostPreview(post),100);
+      }catch(err){
+        console.error("GitHub 게시 실패",err);
+        state.posts=previousPosts;
+        renderAll();
+        toast(err?.message==="login_required" ? "관리자 로그인이 필요합니다." : "GitHub에 게시하지 못했습니다.");
+      }finally{
+        publishBtn.disabled=false;
+      }
     },true);
   }
 
