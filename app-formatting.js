@@ -1,4 +1,4 @@
-/* 포스트 작성실: 문단별 리치 텍스트 정렬 + 구분선 */
+/* 포스트 작성실: 문단별 리치 텍스트 정렬 + 구분선 + 초기화 */
 (() => {
   const textarea = document.querySelector("#editorBody");
   const row = document.querySelector(".editor-format-row");
@@ -24,7 +24,7 @@
     lines.forEach(line=>{
       if(/^\s*---\s*$/.test(line)){
         flush();
-        blocks.push('<hr class="post-divider">');
+        blocks.push('<hr class="post-divider divider-soft-full">');
       }else if(line.trim()===""){
         flush();
       }else{
@@ -105,6 +105,12 @@
     <button type="button" class="editor-format-btn" data-command="justifyFull">양쪽</button>
     <button type="button" class="editor-format-btn" data-command="justifyRight">우측</button>
     <span class="editor-format-divider" aria-hidden="true"></span>
+    <select id="editorDividerStyle" class="editor-divider-style" aria-label="구분선 종류">
+      <option value="soft-full">연한 전체선</option>
+      <option value="solid">기본선</option>
+      <option value="dashed">점선</option>
+      <option value="short">짧은 중앙선</option>
+    </select>
     <button type="button" class="editor-format-btn" id="editorInsertDivider">구분선</button>
   `;
   row.append(divider,group);
@@ -131,6 +137,29 @@
 
   document.addEventListener("selectionchange",updateActiveButtons);
 
+  function insertStyledDivider(style){
+    rich.focus();
+    const sel=window.getSelection();
+    if(!sel?.rangeCount) return;
+    const range=sel.getRangeAt(0);
+    if(!rich.contains(range.commonAncestorContainer)) return;
+
+    const hr=document.createElement("hr");
+    hr.className=`post-divider divider-${style}`;
+    range.deleteContents();
+    range.insertNode(hr);
+
+    const p=document.createElement("p");
+    p.innerHTML="<br>";
+    hr.after(p);
+    const nextRange=document.createRange();
+    nextRange.selectNodeContents(p);
+    nextRange.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(nextRange);
+    syncPlain();
+  }
+
   group.addEventListener("click",e=>{
     const commandBtn=e.target.closest("[data-command]");
     if(commandBtn){
@@ -142,24 +171,51 @@
     }
 
     if(e.target.closest("#editorInsertDivider")){
-      rich.focus();
-      try{
-        document.execCommand("insertHorizontalRule",false,null);
-      }catch(_e){
-        const sel=window.getSelection();
-        if(sel?.rangeCount){
-          const hr=document.createElement("hr");
-          hr.className="post-divider";
-          const range=sel.getRangeAt(0);
-          range.deleteContents();
-          range.insertNode(hr);
-        }
-      }
-      rich.querySelectorAll("hr").forEach(hr=>hr.classList.add("post-divider"));
-      syncPlain();
+      const style=document.querySelector("#editorDividerStyle")?.value || "soft-full";
+      insertStyledDivider(style);
       if(typeof toast==="function") toast("구분선을 넣었습니다.");
     }
   });
+
+  /* 임시저장 - 불러오기 - 초기화 순서로 버튼 추가 */
+  const loadBtn=document.querySelector("#editorTempLoadBtn");
+  if(loadBtn && !document.querySelector("#editorResetBtn")){
+    const resetBtn=document.createElement("button");
+    resetBtn.type="button";
+    resetBtn.className="ghost-btn";
+    resetBtn.id="editorResetBtn";
+    resetBtn.textContent="초기화";
+    loadBtn.insertAdjacentElement("afterend",resetBtn);
+
+    const release=()=>setTimeout(()=>resetBtn.classList.remove("press-active"),80);
+    resetBtn.addEventListener("pointerdown",()=>resetBtn.classList.add("press-active"));
+    ["pointerup","pointercancel","pointerleave"].forEach(type=>resetBtn.addEventListener(type,release));
+
+    resetBtn.addEventListener("click",()=>{
+      if(typeof pulsePress==="function") pulsePress(resetBtn);
+      const hasContent=!!(
+        document.querySelector("#editorTitle")?.value.trim() ||
+        document.querySelector("#editorTags")?.value.trim() ||
+        textarea.value.trim() ||
+        rich.innerText.trim()
+      );
+      if(hasContent && !window.confirm("작성 중인 내용을 모두 초기화할까요?")) return;
+
+      const title=document.querySelector("#editorTitle");
+      const series=document.querySelector("#editorSeries");
+      const tags=document.querySelector("#editorTags");
+      if(title) title.value="";
+      if(series) series.value="";
+      if(tags) tags.value="";
+      textarea.value="";
+      rich.innerHTML="<p><br></p>";
+      syncPlain();
+      try{ localStorage.removeItem("aotsubaArchive.editorDraft.v1"); }catch(_e){}
+      if(typeof saveEditorDraft==="function") saveEditorDraft();
+      if(typeof toast==="function") toast("작성 내용을 초기화했습니다.");
+      title?.focus();
+    });
+  }
 
   const editor=document.querySelector("#postEditor");
   const observer=new MutationObserver(()=>{
