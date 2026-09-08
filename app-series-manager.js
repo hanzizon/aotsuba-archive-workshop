@@ -184,3 +184,64 @@
 
   window.addEventListener("load",()=>setTimeout(loadSeriesEdits,0));
 })();
+
+/* 포스트 열람 상단 수정/닫기 정렬 */
+(() => {
+  function removeTopEditButton(){
+    document.querySelector("#previewTopEditBtn")?.remove();
+    document.querySelector(".preview-top-actions")?.classList.remove("has-edit");
+  }
+
+  function ensureTopActions(){
+    const top=document.querySelector(".preview-top");
+    const close=document.querySelector(".preview-close");
+    if(!top || !close) return null;
+    let actions=top.querySelector(".preview-top-actions");
+    if(!actions){
+      actions=document.createElement("div");
+      actions.className="preview-top-actions";
+      top.append(actions);
+      actions.append(close);
+    }else if(close.parentElement!==actions){
+      actions.append(close);
+    }
+    return actions;
+  }
+
+  const baseOpenPostPreview=window.openPostPreview;
+  if(typeof baseOpenPostPreview==="function"){
+    window.openPostPreview=function(post){
+      baseOpenPostPreview(post);
+      document.querySelector(".post-preview-actions")?.remove();
+      removeTopEditButton();
+      const actions=ensureTopActions();
+      if(!actions) return;
+
+      const edit=document.createElement("button");
+      edit.type="button";
+      edit.id="previewTopEditBtn";
+      edit.className="post-edit-btn";
+      edit.textContent="수정";
+      actions.insertBefore(edit,actions.querySelector(".preview-close"));
+      actions.classList.add("has-edit");
+
+      edit.addEventListener("click",()=>{
+        const fallback=document.querySelector(".post-edit-btn:not(#previewTopEditBtn)");
+        if(fallback){ fallback.click(); return; }
+        const content=document.querySelector("#previewContent");
+        const hiddenEdit=content?.querySelector(".post-edit-btn");
+        hiddenEdit?.click();
+      });
+    };
+  }
+
+  const baseOpenSeriesPreview=window.openSeriesPreview;
+  if(typeof baseOpenSeriesPreview==="function"){
+    window.openSeriesPreview=function(series){
+      removeTopEditButton();
+      return baseOpenSeriesPreview(series);
+    };
+  }
+
+  window.addEventListener("load",ensureTopActions);
+})();
