@@ -1,6 +1,5 @@
-/* 시리즈 순서 + 시리즈 내부 포스트 순서 관리 */
+/* 시리즈 내부 포스트 순서 관리 */
 (() => {
-  const SERIES_KEY="aotsubaArchive.seriesEdits.v1";
   const POST_EDIT_KEY="aotsubaArchive.postEdits.v1";
   const modal=document.querySelector("#seriesManager");
   if(!modal) return;
@@ -18,27 +17,6 @@
     }
   }
 
-  function saveSeriesState(){
-    try{
-      const edits={};
-      state.series.forEach(series=>{
-        edits[series.id]={
-          title:series.title,
-          description:series.description,
-          thumbnail:series.thumbnail,
-          order:series.order
-        };
-      });
-      localStorage.setItem(SERIES_KEY,JSON.stringify(edits));
-    }catch(err){
-      console.error("시리즈 순서 저장 실패",err);
-    }
-  }
-
-  function sortedSeries(){
-    return state.series.slice().sort((a,b)=>(a.order??999)-(b.order??999));
-  }
-
   function sortedPosts(seriesId){
     return state.posts
       .filter(post=>post.seriesId===seriesId)
@@ -49,34 +27,19 @@
   function injectControls(){
     modal.querySelectorAll(".series-manager-item").forEach(item=>{
       const panel=item.querySelector(".series-edit-panel");
-      if(!panel || panel.querySelector(".series-order-field")) return;
-      const series=state.series.find(s=>s.id===item.dataset.seriesId);
-      if(!series) return;
+      if(!panel || panel.querySelector(".series-post-order-section")) return;
 
-      const ordered=sortedSeries();
-      const currentIndex=Math.max(0,ordered.findIndex(s=>s.id===series.id));
-      const orderLabel=document.createElement("label");
-      orderLabel.className="series-order-field";
-      orderLabel.innerHTML=`
-        <span>시리즈 순서</span>
-        <select class="series-order-select" aria-label="시리즈 순서">
-          ${ordered.map((s,i)=>`<option value="${i+1}" ${i===currentIndex?"selected":""}>${i+1}번째</option>`).join("")}
-        </select>
-      `;
-
-      const postSection=document.createElement("section");
-      postSection.className="series-post-order-section";
-      postSection.innerHTML=`
+      const section=document.createElement("section");
+      section.className="series-post-order-section";
+      section.innerHTML=`
         <div class="series-post-order-head">
           <strong>포스트 순서</strong>
-          <span>위아래 버튼으로 위치를 바꾸면 회차 번호도 함께 바뀝니다.</span>
+          <span>위아래로 옮기면 회차 번호도 함께 바뀝니다.</span>
         </div>
         <div class="series-post-order-list"></div>
       `;
-
       const actions=panel.querySelector(".series-edit-actions");
-      panel.insertBefore(orderLabel,actions);
-      panel.insertBefore(postSection,actions);
+      panel.insertBefore(section,actions);
       renderPostOrderList(item);
     });
   }
@@ -110,20 +73,8 @@
     savePostOrders(posts);
     renderPostOrderList(item);
     renderSeries();
-    if(state.seriesId===item.dataset.seriesId) renderSeriesPreviewPosts?.();
+    if(state.seriesId===item.dataset.seriesId && typeof renderSeriesPreviewPosts==="function") renderSeriesPreviewPosts();
     toast("포스트 순서를 변경했습니다.");
-  }
-
-  function applySeriesOrder(item){
-    const select=item.querySelector(".series-order-select");
-    const targetIndex=Math.max(0,Number(select?.value||1)-1);
-    const ordered=sortedSeries();
-    const currentIndex=ordered.findIndex(s=>s.id===item.dataset.seriesId);
-    if(currentIndex<0) return;
-    const [picked]=ordered.splice(currentIndex,1);
-    ordered.splice(Math.min(targetIndex,ordered.length),0,picked);
-    ordered.forEach((series,index)=>{ series.order=index+1; });
-    saveSeriesState();
   }
 
   const observer=new MutationObserver(injectControls);
@@ -132,19 +83,12 @@
 
   modal.addEventListener("click",e=>{
     const move=e.target.closest(".series-post-move-btn");
-    if(move){
-      e.preventDefault();
-      e.stopPropagation();
-      const item=move.closest(".series-manager-item");
-      if(item) movePost(item,move.closest(".series-post-order-row")?.dataset.postId,move.dataset.move);
-      return;
-    }
-  },true);
-
-  modal.addEventListener("click",e=>{
-    const save=e.target.closest(".series-edit-save");
-    if(!save) return;
-    const item=save.closest(".series-manager-item");
-    if(item) applySeriesOrder(item);
+    if(!move) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if(typeof pulsePress==="function") pulsePress(move);
+    const item=move.closest(".series-manager-item");
+    const row=move.closest(".series-post-order-row");
+    if(item && row) movePost(item,row.dataset.postId,move.dataset.move);
   },true);
 })();
