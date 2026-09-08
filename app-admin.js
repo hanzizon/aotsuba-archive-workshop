@@ -9,6 +9,7 @@
 
   function setAdminState(isAdmin){
     document.body.classList.toggle("is-admin",!!isAdmin);
+    document.dispatchEvent(new CustomEvent("archive-admin-change"));
     const btn=document.querySelector("#adminSessionBtn");
     if(btn) btn.textContent=isAdmin?"로그아웃":"관리자";
   }
@@ -91,8 +92,8 @@
       if(revision!==writeRevision || baseline!==JSON.stringify([state.posts,state.series]) ||
         document.querySelector("#postEditor.open,#seriesManager.open")) return;
       if(JSON.stringify([posts.data,series.data])===baseline) return;
-      state.posts=posts.data;
-      state.series=series.data;
+      state.posts=posts.data.map(normalizePost);
+      state.series=series.data.map(normalizeSeries);
       renderAll();
       if(typeof renderSeriesPreviewPosts==="function") renderSeriesPreviewPosts();
     }catch(err){
@@ -217,14 +218,8 @@
   /* 시리즈 설정/순서 변경이 끝난 직후 GitHub에도 저장 */
   document.addEventListener("click",e=>{
     if(!getToken()) return;
-    const seriesChanged=e.target.closest(".series-edit-save,.series-move-btn");
+    
     const postOrderChanged=e.target.closest(".series-post-move-btn");
-    if(seriesChanged){
-      setTimeout(()=>window.archiveSaveSeries(state.series).catch(err=>{
-        console.error(err);
-        toast("시리즈를 GitHub에 저장하지 못했습니다.");
-      }),120);
-    }
     if(postOrderChanged){
       setTimeout(()=>window.archiveSavePosts(state.posts).catch(err=>{
         console.error(err);

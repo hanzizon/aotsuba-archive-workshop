@@ -1,6 +1,18 @@
 const EMBEDDED_POSTS = [{"id": "post-001", "title": "제43편. 등불", "excerpt": "밤이 깊어진 뒤에도 방 안에는 등잔 하나가 오래 남아 있었다.", "body": "방으로 돌아왔을 때에는 창밖이 이미 어두워져 있었다. 등잔 하나가 침대 곁에서 낮은 빛을 흘리고 있었고, 츠바키는 문이 닫히는 소리를 들은 뒤에도 한동안 그 자리에서 움직이지 않았다. 오늘 있었던 일을 차례로 떠올리려 했지만 이상하게도 마지막에 들었던 목소리만 또렷하게 남았다.\n\n아오이는 늘 그렇듯 필요한 말만 남기고 물러났다. 그러나 그 짧은 인사가 평소와 같지 않았다는 것을 츠바키는 알고 있었다. 아주 사소한 차이였고, 다른 사람이라면 알아채지 못했을 정도였지만 이제는 그런 것까지 눈에 들어왔다.", "date": "2026-09-07T18:00:00+09:00", "seriesId": "royal-guard-au", "seriesOrder": 43, "tags": ["아오츠바", "황녀AU", "연재"]}, {"id": "post-002", "title": "제42편. 귀환", "excerpt": "돌아온다는 말은 생각보다 많은 것을 바꾸었다.", "body": "황궁의 회랑은 늦은 오후의 빛으로 길게 물들어 있었다. 츠바키는 걸음을 늦추지 않은 채 창밖을 바라보았고, 반 걸음 뒤에서는 아오이의 발소리가 일정한 간격으로 따라왔다. 익숙한 거리였다. 어느 순간부터는 그 간격마저 하루의 일부처럼 느껴졌다.", "date": "2026-09-05T21:30:00+09:00", "seriesId": "royal-guard-au", "seriesOrder": 42, "tags": ["아오츠바", "황녀AU"]}, {"id": "post-003", "title": "첫눈", "excerpt": "도시의 첫눈이 내리던 날, 두 사람은 평소보다 조금 늦게 집으로 돌아갔다.", "body": "첫눈은 생각보다 늦게 내렸다. 두 사람이 건물 밖으로 나왔을 때에는 이미 도로 가장자리에 얇은 흰빛이 내려앉아 있었고, 츠바키는 우산을 펴려던 손을 잠시 멈췄다.", "date": "2026-08-29T13:00:00+09:00", "seriesId": "modern-au", "seriesOrder": 3, "tags": ["현대AU", "단편"]}, {"id": "post-004", "title": "작은 정원", "excerpt": "아무도 찾지 않는 정원 한구석에서 시작된 짧은 이야기.", "body": "정원은 본궁에서 멀지 않았지만 이상하리만치 사람이 드물었다. 오래된 담장과 키 낮은 장미 덤불 사이로 좁은 길이 이어졌고, 두 사람은 말없이 그 길을 걸었다.", "date": "2026-08-20T09:20:00+09:00", "seriesId": "shorts", "seriesOrder": 1, "tags": ["단편", "정원"]}];
 const EMBEDDED_SERIES = [{"id": "royal-guard-au", "title": "기사띠니 황녀띠니", "description": "제목 고민 중", "thumbnail": "./series-kittihwangtti.png", "order": 1}];
 
+const ARCHIVE_TYPES = {text:"글 아카이브",image:"그림 아카이브",video:"영상 아카이브",mixed:"혼합 아카이브"};
+const SERIES_CATEGORIES = ["창작","번역","스토리 번역","팬픽","설정집","자료 정리","감상","메모","기타"];
+function normalizeSeries(series){
+  return {...series,archiveType:Object.hasOwn(ARCHIVE_TYPES,series.archiveType)?series.archiveType:"text",
+    categories:[...new Set((Array.isArray(series.categories)?series.categories:[]).filter(t=>typeof t==="string").map(t=>t.trim()).filter(Boolean))]};
+}
+function normalizePost(post){ return {...post,contentType:post.contentType||"text"}; }
+function seriesMetadata(series){
+  const row=normalizeSeries(series);
+  return '<div class="series-metadata">'+[ARCHIVE_TYPES[row.archiveType],...row.categories].map(escapeHtml).join(" · ")+'</div>';
+}
+
 const state = {
   posts: [],
   series: [],
@@ -40,8 +52,8 @@ let dataInitialized=false;
 function loadData(){
   if(dataInitialized) return;
   dataInitialized=true;
-  state.posts = structuredClone(EMBEDDED_POSTS);
-  state.series = structuredClone(EMBEDDED_SERIES);
+  state.posts = structuredClone(EMBEDDED_POSTS).map(normalizePost);
+  state.series = structuredClone(EMBEDDED_SERIES).map(normalizeSeries);
   renderAll();
 }
 
@@ -68,6 +80,7 @@ function renderSeries(){
           <div class="series-body">
             <div class="series-title">${escapeHtml(series.title)}</div>
             <p class="series-desc">${escapeHtml(series.description || "")}</p>
+            ${seriesMetadata(series)}
             <div class="series-meta">${count}개의 포스트</div>
           </div>
         </article>
@@ -328,6 +341,7 @@ function openSeriesPreview(series){
   $("#previewKind").textContent="";
   $("#previewContent").innerHTML=`
     <section class="series-archive-block series-archive-minimal">
+      ${seriesMetadata(series)}
       <div class="archive-controls series-archive-controls">
         <input id="seriesPreviewSearch" type="search" placeholder="제목, 본문 검색" aria-label="포스트 검색">
         <select id="seriesPreviewSort" aria-label="정렬">

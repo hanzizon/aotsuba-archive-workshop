@@ -1,38 +1,8 @@
-/* 시리즈 관리 화면 */
+/* 시리즈 생성 및 설정: 저장 성공 후 로컬 캐시 갱신 */
 (() => {
   const STORAGE_KEY="aotsubaArchive.seriesEdits.v1";
-
-  function saveSeriesEdits(){
-    try{
-      const edits={};
-      state.series.forEach(series=>{
-        edits[series.id]={
-          title:series.title,
-          description:series.description,
-          thumbnail:series.thumbnail,
-          order:series.order
-        };
-      });
-      localStorage.setItem(STORAGE_KEY,JSON.stringify(edits));
-    }catch(err){
-      console.error("시리즈 설정 저장 실패",err);
-    }
-  }
-
-  function loadSeriesEdits(){
-    try{
-      const raw=localStorage.getItem(STORAGE_KEY);
-      if(!raw) return;
-      const edits=JSON.parse(raw);
-      if(!edits || typeof edits!=="object") return;
-      state.series=state.series.map(series=>edits[series.id]?{...series,...edits[series.id]}:series);
-      renderSeries();
-      populateEditorSeries();
-    }catch(err){
-      console.error("시리즈 설정 불러오기 실패",err);
-    }
-  }
-
+  let reorderMode=false, busy=false;
+  const isAdmin=()=>window.archiveIsAdmin?.()===true;
   const modal=document.createElement("section");
   modal.id="seriesManager";
   modal.className="series-manager";
@@ -48,191 +18,185 @@
       </div>
       <div class="series-manager-toolbar">
         <button type="button" class="ghost-btn series-reorder-toggle">시리즈 순서 변경</button>
+        <button type="button" class="primary-btn series-create-toggle">새 시리즈</button>
       </div>
+      <div id="seriesCreateArea"></div>
       <div class="series-manager-list" id="seriesManagerList"></div>
-    </div>
-  `;
+    </div>`;
   document.body.append(modal);
-
-  let reorderMode=false;
-
-  function pressFx(btn){
-    if(!btn) return;
-    btn.classList.remove("press-active");
-    void btn.offsetWidth;
-    btn.classList.add("press-active");
-    setTimeout(()=>btn.classList.remove("press-active"),170);
+  const sortedSeries=()=>state.series.slice().sort((a,b)=>(a.order??999)-(b.order??999));
+  function fields(series={}){
+    const row=normalizeSeries(series);
+    return `
+      <label><span>제목</span><input type="text" class="series-edit-title" required maxlength="200" value="${escapeHtml(row.title||"")}"></label>
+      <label><span>한 줄 소개</span><input type="text" class="series-edit-desc" value="${escapeHtml(row.description||"")}"></label>
+      <label><span>썸네일 주소</span><input type="text" class="series-edit-thumb-url" placeholder="이미지 URL 또는 파일 경로" value="${escapeHtml(row.thumbnail||"")}"></label>
+      <label><span>썸네일 파일</span><input type="file" class="series-edit-thumb" accept="image/*"></label>
+      <label><span>아카이브 유형</span><select class="series-edit-type">${Object.entries(ARCHIVE_TYPES).map(([key,label])=>`<option value="${key}" ${row.archiveType===key?"selected":""}>${label}</option>`).join("")}</select></label>
+      <fieldset class="series-category-field"><legend>성격 태그 · 복수 선택</legend>
+        <div class="series-category-options">${SERIES_CATEGORIES.map(tag=>`<label><input type="checkbox" value="${tag}" ${row.categories.includes(tag)?"checked":""}><span>${tag}</span></label>`).join("")}</div>
+      </fieldset>
+      <label><span>추가 태그</span><input type="text" class="series-edit-custom" placeholder="쉼표로 구분" value="${escapeHtml(row.categories.filter(t=>!SERIES_CATEGORIES.includes(t)).join(", "))}"></label>`;
   }
-
-  function sortedSeries(){
-    return state.series.slice().sort((a,b)=>(a.order??999)-(b.order??999));
-  }
-
   function renderManager(){
-    const list=modal.querySelector("#seriesManagerList");
-    const ordered=sortedSeries();
-    list.innerHTML=ordered
-      .map((series,index)=>{
-        const count=state.posts.filter(p=>p.seriesId===series.id).length;
-        return `
-          <article class="series-manager-item${reorderMode?" reorder-mode":""}" data-series-id="${escapeHtml(series.id)}">
-            <div class="series-manager-thumb">
-              ${series.thumbnail?`<img src="${escapeHtml(series.thumbnail)}" alt="">`:""}
-            </div>
-            <div class="series-manager-info">
-              <strong>${escapeHtml(series.title)}</strong>
-              <p>${escapeHtml(series.description||"")}</p>
-              <span>${count}개의 포스트</span>
-            </div>
-            ${reorderMode ? `
-              <div class="series-reorder-actions">
-                <button type="button" class="series-move-btn" data-move="left" aria-label="왼쪽으로 이동" ${index===0?"disabled":""}>←</button>
-                <button type="button" class="series-move-btn" data-move="right" aria-label="오른쪽으로 이동" ${index===ordered.length-1?"disabled":""}>→</button>
-              </div>
-            ` : `<button type="button" class="series-gear-btn" aria-label="${escapeHtml(series.title)} 설정">⚙</button>`}
-            <div class="series-edit-panel" hidden>
-              <label>
-                <span>제목</span>
-                <input type="text" class="series-edit-title" value="${escapeHtml(series.title)}">
-              </label>
-              <label>
-                <span>한 줄 소개</span>
-                <input type="text" class="series-edit-desc" value="${escapeHtml(series.description||"")}">
-              </label>
-              <label class="series-thumb-field">
-                <span>썸네일</span>
-                <input type="file" class="series-edit-thumb" accept="image/*">
-              </label>
-              <div class="series-edit-actions">
-                <button type="button" class="ghost-btn series-edit-cancel">취소</button>
-                <button type="button" class="primary-btn series-edit-save">저장</button>
-              </div>
-            </div>
-          </article>
-        `;
-      }).join("") || `<div class="empty-state">아직 시리즈가 없습니다.</div>`;
+    modal.querySelector(".series-manager-toolbar").hidden=!isAdmin();
+    modal.querySelector("#seriesManagerList").innerHTML=sortedSeries().map((series,index,rows)=>`
+      <article class="series-manager-item" data-series-id="${escapeHtml(series.id)}">
+        <div class="series-manager-thumb">${series.thumbnail?`<img src="${escapeHtml(series.thumbnail)}" alt="">`:""}</div>
+        <div class="series-manager-info"><strong>${escapeHtml(series.title)}</strong>
+          <p>${escapeHtml(series.description||"")}</p>${seriesMetadata(series)}
+          <span>${state.posts.filter(p=>p.seriesId===series.id).length}개의 포스트</span></div>
+        ${!isAdmin()?"":reorderMode?`<div class="series-reorder-actions">
+          <button type="button" class="series-move-btn" data-move="-1" aria-label="앞으로 이동" ${index===0?"disabled":""}>←</button>
+          <button type="button" class="series-move-btn" data-move="1" aria-label="뒤로 이동" ${index===rows.length-1?"disabled":""}>→</button></div>`:
+          `<button type="button" class="series-gear-btn" aria-label="${escapeHtml(series.title)} 설정">⚙</button>`}
+        ${!isAdmin()?"":`<form class="series-edit-panel" hidden>${fields(series)}
+          <div class="series-edit-actions"><button type="button" class="ghost-btn series-edit-cancel">취소</button>
+          <button type="submit" class="primary-btn series-edit-save">저장</button></div></form>`}
+      </article>`).join("")||'<div class="empty-state">아직 시리즈가 없습니다.</div>';
   }
-
-  function moveSeries(seriesId,direction){
-    const ordered=sortedSeries();
-    const index=ordered.findIndex(s=>s.id===seriesId);
-    if(index<0) return;
-    const target=direction==="left"?index-1:index+1;
-    if(target<0 || target>=ordered.length) return;
-    [ordered[index],ordered[target]]=[ordered[target],ordered[index]];
-    ordered.forEach((series,i)=>{series.order=i+1;});
-    saveSeriesEdits();
-    renderSeries();
-    populateEditorSeries();
-    renderManager();
-    toast("시리즈 순서를 변경했습니다.");
+  function refresh(){
+    renderAll();
+    if(document.querySelector("#seriesPreviewPostList")) renderSeriesPreviewPosts();
   }
-
-  function openManager(){
+  function cache(){
+    try{localStorage.setItem(STORAGE_KEY,JSON.stringify(Object.fromEntries(state.series.map(s=>[s.id,s]))));}
+    catch(err){console.error("시리즈 보조 저장 실패",err);}
+  }
+  async function persist(rows,message){
+    if(!isAdmin()||busy) return false;
+    busy=true;
+    const previous=state.series;
+    state.series=rows.map(normalizeSeries);
+    refresh();
+    modal.setAttribute("aria-busy","true");
+    modal.querySelectorAll("button,input,select").forEach(el=>{el.dataset.wasDisabled=String(el.disabled);el.disabled=true;});
+    try{
+      await window.archiveSaveSeries(state.series);
+      cache();
+      toast(message);
+      return true;
+    }catch(err){
+      state.series=previous;
+      refresh();
+      toast("GitHub에 저장하지 못했습니다. 입력 내용을 확인하고 다시 저장해 주세요.");
+      console.error(err);
+      return false;
+    }finally{
+      busy=false;
+      modal.removeAttribute("aria-busy");
+      modal.querySelectorAll("button,input,select").forEach(el=>{el.disabled=el.dataset.wasDisabled==="true";});
+    }
+  }
+  function closeManager(){
+    if(busy) return;
+    modal.classList.remove("open");
+    modal.setAttribute("aria-hidden","true");
+    modal.querySelector("#seriesCreateArea").innerHTML="";
+    document.body.style.overflow="";
+    document.querySelector("#seriesManageBtn")?.focus();
+  }
+  document.querySelector("#seriesManageBtn")?.addEventListener("click",e=>{
+    e.preventDefault();e.stopImmediatePropagation();
+    if(!isAdmin()) return;
+    pulsePress(e.currentTarget);
     reorderMode=false;
     modal.querySelector(".series-reorder-toggle").textContent="시리즈 순서 변경";
     renderManager();
-    modal.classList.add("open");
-    modal.setAttribute("aria-hidden","false");
+    modal.classList.add("open");modal.setAttribute("aria-hidden","false");
     document.body.style.overflow="hidden";
-  }
-  function closeManager(){
-    modal.classList.remove("open");
-    modal.setAttribute("aria-hidden","true");
-    document.body.style.overflow="";
-  }
-
-  const manageBtn=document.querySelector("#seriesManageBtn");
-  manageBtn?.addEventListener("click",e=>{
-    e.preventDefault();
-    e.stopImmediatePropagation();
-    pressFx(manageBtn);
-    setTimeout(openManager,80);
   },true);
-
-  modal.querySelector(".series-manager-close")?.addEventListener("click",e=>{
-    pressFx(e.currentTarget);
-    setTimeout(closeManager,80);
-  });
-
-  modal.querySelector(".series-reorder-toggle")?.addEventListener("click",e=>{
-    pressFx(e.currentTarget);
-    reorderMode=!reorderMode;
-    e.currentTarget.textContent=reorderMode?"순서 변경 완료":"시리즈 순서 변경";
-    renderManager();
-  });
-
-  modal.addEventListener("click",e=>{
-    const item=e.target.closest(".series-manager-item");
+  modal.addEventListener("click",async e=>{
+    const btn=e.target.closest("button");
+    if(!btn||busy) return;
+    pulsePress(btn);
+    if(btn.matches(".series-manager-close")) return closeManager();
+    if(!isAdmin()) return;
+    if(btn.matches(".series-create-toggle")){
+      const area=modal.querySelector("#seriesCreateArea");
+      if(!area.firstElementChild) area.innerHTML=`<form class="series-create-form series-edit-panel open"><h2>새 시리즈</h2>${fields()}
+        <div class="series-edit-actions"><button type="button" class="ghost-btn series-create-cancel">취소</button>
+        <button type="submit" class="primary-btn series-create-save">생성</button></div></form>`;
+      area.querySelector(".series-edit-title").focus();
+      return;
+    }
+    if(btn.matches(".series-create-cancel")){modal.querySelector("#seriesCreateArea").innerHTML="";return;}
+    if(btn.matches(".series-reorder-toggle")){
+      reorderMode=!reorderMode;
+      btn.textContent=reorderMode?"순서 변경 완료":"시리즈 순서 변경";
+      renderManager();return;
+    }
+    const item=btn.closest(".series-manager-item");
     if(!item) return;
-
-    const move=e.target.closest(".series-move-btn");
-    if(move){
-      pressFx(move);
-      moveSeries(item.dataset.seriesId,move.dataset.move);
-      return;
-    }
-
-    const gear=e.target.closest(".series-gear-btn");
-    if(gear){
-      pressFx(gear);
-      const panel=item.querySelector(".series-edit-panel");
-      panel.hidden=!panel.hidden;
-      if(!panel.hidden){
-        requestAnimationFrame(()=>panel.classList.add("open"));
-      }else{
-        panel.classList.remove("open");
-      }
-      return;
-    }
-
-    const cancel=e.target.closest(".series-edit-cancel");
-    if(cancel){
-      pressFx(cancel);
-      const panel=item.querySelector(".series-edit-panel");
-      panel.classList.remove("open");
-      setTimeout(()=>panel.hidden=true,150);
-      return;
-    }
-
-    const save=e.target.closest(".series-edit-save");
-    if(save){
-      pressFx(save);
-      const series=state.series.find(s=>s.id===item.dataset.seriesId);
-      if(!series) return;
-      series.title=item.querySelector(".series-edit-title").value.trim()||series.title;
-      series.description=item.querySelector(".series-edit-desc").value.trim();
-      saveSeriesEdits();
-      renderSeries();
-      populateEditorSeries();
-      renderManager();
-      if(typeof toast==="function") toast("시리즈를 수정했습니다.");
-      return;
+    const panel=item.querySelector(".series-edit-panel");
+    if(btn.matches(".series-gear-btn")){panel.hidden=!panel.hidden;panel.classList.toggle("open",!panel.hidden);return;}
+    if(btn.matches(".series-edit-cancel")){panel.reset();panel.hidden=true;panel.classList.remove("open");return;}
+    if(btn.matches(".series-move-btn")){
+      const rows=sortedSeries(),index=rows.findIndex(s=>s.id===item.dataset.seriesId),target=index+Number(btn.dataset.move);
+      if(target<0||target>=rows.length) return;
+      [rows[index],rows[target]]=[rows[target],rows[index]];
+      if(await persist(rows.map((s,i)=>({...s,order:i+1})),"시리즈 순서를 저장했습니다.")) renderManager();
     }
   });
-
-  modal.addEventListener("change",e=>{
-    const input=e.target.closest(".series-edit-thumb");
-    if(!input || !input.files?.[0]) return;
-    const item=input.closest(".series-manager-item");
-    const series=state.series.find(s=>s.id===item?.dataset.seriesId);
-    if(!series) return;
-    const reader=new FileReader();
-    reader.onload=()=>{
-      series.thumbnail=String(reader.result||"");
-      const box=item.querySelector(".series-manager-thumb");
-      box.innerHTML=`<img src="${escapeHtml(series.thumbnail)}" alt="">`;
+  function readThumbnail(file){
+    return new Promise((resolve,reject)=>{
+      const reader=new FileReader();
+      reader.onload=()=>resolve(String(reader.result||""));
+      reader.onerror=()=>reject(new Error("thumbnail_read_failed"));
+      reader.readAsDataURL(file);
+    });
+  }
+  let reading=false;
+  modal.addEventListener("submit",async e=>{
+    const form=e.target.closest("form");
+    if(!form) return;
+    e.preventDefault();
+    if(!isAdmin()||busy||reading) return;
+    const title=form.querySelector(".series-edit-title").value.trim();
+    if(!title){toast("제목을 입력해 주세요.");form.querySelector(".series-edit-title").focus();return;}
+    const create=form.matches(".series-create-form");
+    const current=create?null:state.series.find(s=>s.id===form.closest(".series-manager-item").dataset.seriesId);
+    if(!create&&!current) return;
+    const fieldsValue={
+      title,description:form.querySelector(".series-edit-desc").value.trim(),
+      archiveType:form.querySelector(".series-edit-type").value,
+      categories:[...form.querySelectorAll(".series-category-options input:checked")].map(el=>el.value)
+        .concat(form.querySelector(".series-edit-custom").value.split(",")),
+      thumbnail:form.querySelector(".series-edit-thumb-url").value.trim()
     };
-    reader.readAsDataURL(input.files[0]);
+    const file=form.querySelector(".series-edit-thumb").files?.[0];
+    try{
+      reading=true;
+      if(file){
+        if(!file.type.startsWith("image/")||file.size>2*1024*1024){toast("2MB 이하의 이미지 파일을 선택해 주세요.");return;}
+        fieldsValue.thumbnail=await readThumbnail(file);
+      }
+      if(!isAdmin()||!form.isConnected) return;
+      let id=current?.id;
+      if(create){do{id="series-"+crypto.randomUUID();}while(state.series.some(s=>s.id===id));}
+      const row=normalizeSeries({...current,...fieldsValue,id,
+        order:create?Math.max(0,...state.series.map(s=>Number.isFinite(s.order)?s.order:999))+1:current.order});
+      const rows=create?[...state.series,row]:state.series.map(s=>s.id===id?row:s);
+      if(await persist(rows,create?"새 시리즈를 GitHub에 저장했습니다.":"시리즈 설정을 GitHub에 저장했습니다.")){
+        if(create) modal.querySelector("#seriesCreateArea").innerHTML="";
+        renderManager();
+      }
+    }catch(err){console.error(err);toast("썸네일을 읽지 못했습니다. 다시 선택해 주세요.");}
+    finally{reading=false;}
   });
-
-  document.addEventListener("keydown",e=>{
-    if(e.key==="Escape" && modal.classList.contains("open")) closeManager();
+  document.addEventListener("archive-admin-change",()=>{
+    if(!isAdmin()){
+      modal.querySelector("#seriesCreateArea").innerHTML="";
+      renderManager();
+      if(!busy) closeManager();
+    }
   });
-
-  loadSeriesEdits();
+  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&modal.classList.contains("open")) closeManager();});
+  try{
+    const edits=JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}");
+    state.series=state.series.map(s=>normalizeSeries({...s,...edits[s.id]}));
+  }catch(err){console.error(err);}
 })();
-
 /* 포스트 열람 상단 수정/닫기 정렬 */
 (() => {
   function removeTopEditButton(){

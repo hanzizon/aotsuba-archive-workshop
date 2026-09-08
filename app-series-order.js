@@ -84,6 +84,7 @@
   modal.addEventListener("click",e=>{
     const move=e.target.closest(".series-post-move-btn");
     if(!move) return;
+    if(!window.archiveIsAdmin?.() || modal.getAttribute("aria-busy")==="true") return;
     e.preventDefault();
     e.stopPropagation();
     if(typeof pulsePress==="function") pulsePress(move);

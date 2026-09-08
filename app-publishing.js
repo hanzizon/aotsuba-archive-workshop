@@ -41,7 +41,7 @@
     const ids=new Set(state.posts.map(post=>post.id));
     saved.forEach(post=>{
       if(!post?.id || ids.has(post.id)) return;
-      state.posts.push(edits[post.id] ? {...post,...edits[post.id]} : post);
+      state.posts.push(normalizePost(edits[post.id] ? {...post,...edits[post.id]} : post));
       ids.add(post.id);
     });
     renderAll();
@@ -102,6 +102,7 @@
       const post={
         id:`post-${now.getTime()}`,
         title,
+        contentType:"text",
         excerpt:body.replace(/\s+/g," ").trim().slice(0,120),
         body,
         bodyHtml,
