@@ -212,7 +212,9 @@
   if(typeof baseOpenPostPreview==="function"){
     window.openPostPreview=function(post){
       baseOpenPostPreview(post);
-      document.querySelector(".post-preview-actions")?.remove();
+      const legacyAction=document.querySelector(".post-preview-actions");
+      const legacyEdit=legacyAction?.querySelector(".post-edit-btn") || null;
+      legacyAction?.remove();
       removeTopEditButton();
       const actions=ensureTopActions();
       if(!actions) return;
@@ -226,11 +228,8 @@
       actions.classList.add("has-edit");
 
       edit.addEventListener("click",()=>{
-        const fallback=document.querySelector(".post-edit-btn:not(#previewTopEditBtn)");
-        if(fallback){ fallback.click(); return; }
-        const content=document.querySelector("#previewContent");
-        const hiddenEdit=content?.querySelector(".post-edit-btn");
-        hiddenEdit?.click();
+        if(typeof pulsePress==="function") pulsePress(edit);
+        legacyEdit?.click();
       });
     };
   }
