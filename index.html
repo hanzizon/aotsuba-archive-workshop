@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="./styles-editor.css">
   <link rel="stylesheet" href="./styles-workshop-sync.css">
   <link rel="stylesheet" href="./styles-enhancements.css">
+  <link rel="stylesheet" href="./styles-series-manager.css">
   <style>
     .post-preview-actions{
       display:flex;
@@ -65,7 +66,7 @@
     </section>
 
     <footer class="site-footer">
-      <span>아오츠바 아카이브.</span>
+      <span>아오츠바 츠하자.</span>
     </footer>
   </main>
 
@@ -166,7 +167,8 @@
             title:post.title,
             seriesId:post.seriesId,
             tags:post.tags,
-            body:post.body
+            body:post.body,
+            bodyHtml:post.bodyHtml||""
           };
           localStorage.setItem(POST_EDIT_KEY,JSON.stringify(edits));
         }catch(err){
@@ -195,22 +197,35 @@
         applyEditorTypography();
 
         const editor=document.querySelector("#postEditor");
+        window.__archiveRichSkipNextSync=true;
         editor.classList.add("open");
         editor.setAttribute("aria-hidden","false");
         document.querySelector("#archiveEditorTrigger")?.setAttribute("aria-expanded","true");
         document.body.style.overflow="hidden";
-        setTimeout(()=>document.querySelector("#editorTitle")?.focus(),40);
+        setTimeout(()=>{
+          if(window.setArchiveEditorHtml){
+            window.setArchiveEditorHtml(post.bodyHtml || window.archivePlainTextToHtml?.(post.body||"") || "");
+          }
+          document.querySelector("#editorRichBody")?.focus();
+        },20);
       }
 
       openPostPreview=function(post){
-        originalOpenPostPreview(post);
-        const content=document.querySelector("#previewContent");
-        if(!content) return;
-        const actions=document.createElement("div");
-        actions.className="post-preview-actions";
-        actions.innerHTML='<button type="button" class="post-edit-btn">수정</button>';
-        content.prepend(actions);
-        actions.querySelector(".post-edit-btn")?.addEventListener("click",e=>{
+        const series=seriesById(post.seriesId);
+        document.querySelector("#previewKind").textContent="";
+        const renderedBody=window.renderArchivePostBody ? window.renderArchivePostBody(post) : escapeHtml(post.body||"");
+        document.querySelector("#previewContent").innerHTML=`
+          <div class="post-preview-actions"><button type="button" class="post-edit-btn">수정</button></div>
+          <h2 class="preview-title">${episodeBadge(post)}<span class="preview-title-text">${escapeHtml(cleanPostTitle(post.title))}</span></h2>
+          <div class="preview-meta">
+            <span>${formatDate(post.date)}</span>
+            ${series ? `<span class="post-series">${escapeHtml(series.title)}</span>` : ""}
+          </div>
+          <div class="preview-body">${renderedBody}</div>
+        `;
+        document.querySelector("#previewModal").hidden=false;
+        document.body.style.overflow="hidden";
+        document.querySelector(".post-edit-btn")?.addEventListener("click",e=>{
           pulsePress(e.currentTarget);
           closePreview();
           setTimeout(()=>openPostEditorForEdit(post),80);
@@ -235,7 +250,8 @@
             .split(",")
             .map(v=>v.trim())
             .filter(Boolean),
-          body:document.querySelector("#editorBody")?.value||""
+          body:document.querySelector("#editorBody")?.value||"",
+          bodyHtml:window.getArchiveEditorHtml?.()||""
         };
 
         state.posts[idx]=updated;
@@ -254,5 +270,6 @@
       loadPostEdits();
     })();
   </script>
+  <script src="./app-series-manager.js"></script>
 </body>
 </html>
