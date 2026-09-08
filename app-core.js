@@ -302,7 +302,7 @@ function renderSeriesPreviewPosts(){
   list.innerHTML=rows.map((post,idx)=>{
     const series=seriesById(post.seriesId);
     return `
-      <article class="post-item series-preview-post" data-post-series="${escapeHtml(post.seriesId||"")}" data-post-order="${Number.isFinite(post.seriesOrder)?post.seriesOrder:""}">
+      <article class="post-item series-preview-post" data-post-id="${escapeHtml(post.id)}" data-post-series="${escapeHtml(post.seriesId||"")}" data-post-order="${Number.isFinite(post.seriesOrder)?post.seriesOrder:""}">
         <div>
           <h3 class="post-title series-list-title">
             ${episodeBadge(post)}
@@ -316,9 +316,11 @@ function renderSeriesPreviewPosts(){
       </article>
     `;
   }).join("");
+  window.archiveDeleteSelection?.render();
 }
 
 function openSeriesPreview(series){
+  window.archiveDeleteSelection?.reset();
   state.seriesId=series.id;
   state.query="";
   state.sort="latest";
@@ -371,6 +373,7 @@ $("#previewContent").addEventListener("click",e=>{
 
   const item=e.target.closest(".series-preview-post");
   if(item){
+    if(window.archiveDeleteSelection?.active()) return;
     pulsePress(item);
     const order=item.dataset.postOrder==="" ? null : Number(item.dataset.postOrder);
     const post=state.posts.find(p=>

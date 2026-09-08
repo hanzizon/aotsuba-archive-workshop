@@ -242,7 +242,7 @@
 
   function ensureTopActions(){
     const top=document.querySelector(".preview-top");
-    const close=document.querySelector(".preview-close");
+    const close=document.querySelector(".preview-close[data-close-preview]");
     if(!top || !close) return null;
     let actions=top.querySelector(".preview-top-actions");
     if(!actions){
@@ -272,7 +272,7 @@
       edit.id="previewTopEditBtn";
       edit.className="post-edit-btn";
       edit.textContent="수정";
-      actions.insertBefore(edit,actions.querySelector(".preview-close"));
+      actions.insertBefore(edit,actions.querySelector(".preview-close[data-close-preview]"));
       actions.classList.add("has-edit");
 
       edit.addEventListener("click",()=>{

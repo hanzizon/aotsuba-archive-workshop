@@ -127,3 +127,11 @@ body:has(.post-editor.open) .aotsuba-bg{
     gap:7px;
   }
 }
+#editorBriefing{margin:9px 4px 0;color:#9ca3af;font-size:11px;line-height:1.6}
+.series-delete-actions{display:inline-flex;align-items:center;gap:8px;margin-left:auto;margin-right:8px;flex-wrap:wrap;justify-content:flex-end}
+.series-delete-actions[hidden],.series-delete-actions [hidden]{display:none!important}
+.series-delete-actions .preview-close{color:#000}
+#seriesDeleteCount{font-size:11px;color:var(--muted)}
+.series-delete-actions button:disabled{opacity:.45;cursor:default;box-shadow:none;transform:none}
+.series-preview-post.delete-selecting{display:grid;grid-template-columns:20px minmax(0,1fr);gap:12px;align-items:start;cursor:default}
+.post-delete-checkbox{width:16px;height:16px;margin:4px 0 0;accent-color:var(--accent);cursor:pointer}
