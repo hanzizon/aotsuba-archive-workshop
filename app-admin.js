@@ -47,6 +47,7 @@
     return data;
   }
 
+  window.archiveIsAdmin=()=>!!getToken();
   window.archiveSavePosts=async function(rows=state.posts){
     await api("/data/posts",{method:"PUT",body:rows,auth:true});
     return true;
@@ -114,7 +115,7 @@
   }
 
   document.querySelector("#adminSessionBtn")?.addEventListener("click",e=>{
-    pulsePress?.(e.currentTarget);
+    if(typeof pulsePress==="function") pulsePress(e.currentTarget);
     if(getToken()){
       setToken("");
       toast("관리자 로그아웃했습니다.");
@@ -171,6 +172,19 @@
     e.stopImmediatePropagation();
   },true);
 
+  /* 기존 포스트의 '수정 저장'은 기존 화면 로직이 끝난 뒤 GitHub에도 저장 */
+  document.addEventListener("click",e=>{
+    if(!getToken()) return;
+    const submit=e.target.closest("#editorPublishBtn");
+    if(!submit || submit.textContent.trim()!=="수정 저장") return;
+    setTimeout(()=>window.archiveSavePosts(state.posts).then(()=>{
+      toast("수정 내용을 GitHub에 저장했습니다.");
+    }).catch(err=>{
+      console.error(err);
+      toast("수정 내용을 GitHub에 저장하지 못했습니다.");
+    }),160);
+  },true);
+
   /* 시리즈 설정/순서 변경이 끝난 직후 GitHub에도 저장 */
   document.addEventListener("click",e=>{
     if(!getToken()) return;
@@ -180,13 +194,13 @@
       setTimeout(()=>window.archiveSaveSeries(state.series).catch(err=>{
         console.error(err);
         toast("시리즈를 GitHub에 저장하지 못했습니다.");
-      }),80);
+      }),120);
     }
     if(postOrderChanged){
       setTimeout(()=>window.archiveSavePosts(state.posts).catch(err=>{
         console.error(err);
         toast("포스트 순서를 GitHub에 저장하지 못했습니다.");
-      }),80);
+      }),120);
     }
   });
 
