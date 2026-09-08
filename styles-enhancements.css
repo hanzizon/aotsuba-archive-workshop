@@ -42,6 +42,7 @@ button.press-active{
   align-items:center;
   gap:5px;
   margin-left:2px;
+  flex-wrap:wrap;
 }
 .editor-format-btn{
   border:1px solid var(--line);
@@ -59,7 +60,8 @@ button.press-active{
   border-color:#c9cce0;
 }
 .editor-format-btn.active,
-.editor-format-btn:active{
+.editor-format-btn:active,
+.editor-format-btn.press-active{
   background:var(--accent-soft);
   color:var(--accent-mid);
   border-color:#D9D9F2;
@@ -73,12 +75,74 @@ button.press-active{
   margin:0 2px;
   flex:0 0 auto;
 }
+.editor-divider-style{
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:6px 30px 6px 9px;
+  background:#fff;
+  color:var(--text);
+  font-size:12px;
+  line-height:1.2;
+}
 
-/* 실제 포스트 열람 화면의 구분선 */
-.preview-body .post-divider{
+/* 실제 포스트 열람 화면 / 편집기의 구분선 종류 */
+.preview-body .post-divider,
+.editor-rich-body .post-divider{
   border:0;
-  border-top:1px solid var(--line);
-  margin:24px 0;
+  height:0;
+}
+.preview-body .divider-soft-full,
+.editor-rich-body .divider-soft-full{
+  width:100%;
+  border-top:1px solid #E5E7EB;
+  margin:28px 0;
+}
+.preview-body .divider-solid,
+.editor-rich-body .divider-solid{
+  width:100%;
+  border-top:1px solid #BFC4CF;
+  margin:26px 0;
+}
+.preview-body .divider-dashed,
+.editor-rich-body .divider-dashed{
+  width:100%;
+  border-top:1px dashed #C8CCD6;
+  margin:26px 0;
+}
+.preview-body .divider-short,
+.editor-rich-body .divider-short{
+  width:34%;
+  min-width:90px;
+  max-width:220px;
+  border-top:1px solid #D3D6DE;
+  margin:28px auto;
+}
+
+/* 시리즈 선택 드롭다운: 화살표를 테두리에서 안쪽으로 */
+#editorSeries{
+  appearance:none;
+  -webkit-appearance:none;
+  padding-right:40px !important;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%2316181D' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:right 14px center;
+  background-size:12px 8px;
+}
+
+/* 초기화 버튼 */
+#editorResetBtn{
+  transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease;
+}
+#editorResetBtn:hover{
+  border-color:#c9cce0;
+  box-shadow:0 5px 14px rgba(25,30,50,.09);
+  transform:translateY(-1px);
+}
+#editorResetBtn.press-active,
+#editorResetBtn:active{
+  border-color:#D9D9F2;
+  box-shadow:0 3px 8px rgba(25,30,50,.10),inset 0 1px 2px rgba(25,30,50,.06);
+  transform:translateY(1px);
 }
 
 /* 포스트 열람 상단: 수정 - 닫기 */
@@ -136,8 +200,11 @@ button.press-active{
   .editor-align-group{
     flex-wrap:wrap;
   }
-  .editor-format-btn{
+  .editor-format-btn,
+  .editor-divider-style{
     font-size:11px;
+  }
+  .editor-format-btn{
     padding:6px 7px;
   }
 }
