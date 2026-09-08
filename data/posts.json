@@ -7,7 +7,11 @@
     "date": "2026-09-07T18:00:00+09:00",
     "seriesId": "royal-guard-au",
     "seriesOrder": 43,
-    "tags": ["아오츠바", "황녀AU", "연재"]
+    "tags": [
+      "아오츠바",
+      "황녀AU",
+      "연재"
+    ]
   },
   {
     "id": "post-002",
@@ -17,6 +21,22 @@
     "date": "2026-09-05T21:30:00+09:00",
     "seriesId": "royal-guard-au",
     "seriesOrder": 42,
-    "tags": ["아오츠바", "황녀AU"]
+    "tags": [
+      "아오츠바",
+      "황녀AU"
+    ]
+  },
+  {
+    "id": "post-1788831671887",
+    "title": "fg",
+    "excerpt": "fdgf",
+    "body": "fdgf",
+    "bodyHtml": "<p>fdgf</p>",
+    "date": "2026-09-08T01:41:11.887Z",
+    "seriesId": "royal-guard-au",
+    "seriesOrder": 44,
+    "tags": [
+      "rr"
+    ]
   }
 ]
