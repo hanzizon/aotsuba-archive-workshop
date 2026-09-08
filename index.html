@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="./styles-enhancements.css">
   <link rel="stylesheet" href="./styles-series-manager.css">
   <link rel="stylesheet" href="./styles-admin.css">
+  <link rel="stylesheet" href="./styles-archive-features.css">
   <style>
     .post-preview-actions{
       display:flex;
@@ -132,13 +133,14 @@
     </article>
   </div>
 
-  <img class="aotsuba-bg is-off" id="aotsubaBg" src="./aotsuba-bg.png" alt="" aria-hidden="true">
+  <img class="aotsuba-bg is-off" id="aotsubaBg" alt="" aria-hidden="true" decoding="async">
   <button type="button" class="bg-image-toggle" id="bgImageToggle" aria-pressed="false">이미지 OFF</button>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="./app-core.js"></script>
   <script src="./app-editor.js"></script>
+  <script src="./app-admin.js"></script>
   <script src="./app-formatting.js"></script>
   <script src="./app-editor-fix.js"></script>
   <script>
@@ -273,6 +275,7 @@
     })();
   </script>
   <script src="./app-series-manager.js"></script>
-  <script src="./app-admin.js"></script>
+  <script src="./app-publishing.js"></script>
+  <script src="./app-series-order.js"></script>
 </body>
 </html>

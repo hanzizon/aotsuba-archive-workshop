@@ -3,6 +3,9 @@
   const API_BASE="https://aotsuba-archive-admin.hannzizon.workers.dev";
   const SESSION_KEY="aotsubaArchive.adminSession.v1";
   let token="";
+  const REMOTE_TIMEOUT_MS=6000;
+  let remoteLoadPromise=null;
+  let writeRevision=0;
 
   function setAdminState(isAdmin){
     document.body.classList.toggle("is-admin",!!isAdmin);
@@ -25,7 +28,7 @@
     setAdminState(!!token);
   }
 
-  async function api(path,{method="GET",body,auth=false}={}){
+  async function api(path,{method="GET",body,auth=false,timeoutMs=15000}={}){
     const headers={};
     if(body!==undefined) headers["Content-Type"]="application/json";
     if(auth){
@@ -33,10 +36,14 @@
       if(!current) throw new Error("login_required");
       headers.Authorization=`Bearer ${current}`;
     }
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),timeoutMs);
+    try{
     const res=await fetch(`${API_BASE}${path}`,{
       method,
       headers,
-      body:body===undefined?undefined:JSON.stringify(body)
+      body:body===undefined?undefined:JSON.stringify(body),
+      signal:controller.signal
     });
     const data=await res.json().catch(()=>({}));
     if(res.status===401){
@@ -45,28 +52,49 @@
     }
     if(!res.ok || data.ok===false) throw new Error(data.error||`http_${res.status}`);
     return data;
+    }finally{
+      clearTimeout(timer);
+    }
   }
 
   window.archiveIsAdmin=()=>!!getToken();
   window.archiveSavePosts=async function(rows=state.posts){
+    writeRevision++;
     await api("/data/posts",{method:"PUT",body:rows,auth:true});
     return true;
   };
 
   window.archiveSaveSeries=async function(rows=state.series){
+    writeRevision++;
     await api("/data/series",{method:"PUT",body:rows,auth:true});
     return true;
   };
 
-  async function loadRemoteData(){
+  function loadRemoteData(){
+    if(remoteLoadPromise) return remoteLoadPromise;
+    remoteLoadPromise=syncRemoteData();
+    return remoteLoadPromise;
+  }
+
+  async function syncRemoteData(){
+    const baseline=JSON.stringify([state.posts,state.series]);
+    const revision=writeRevision;
     try{
       const [posts,series]=await Promise.all([
-        api("/data/posts"),
-        api("/data/series")
+        api("/data/posts",{timeoutMs:REMOTE_TIMEOUT_MS}),
+        api("/data/series",{timeoutMs:REMOTE_TIMEOUT_MS})
       ]);
-      if(Array.isArray(posts.data)) state.posts=posts.data;
-      if(Array.isArray(series.data)) state.series=series.data;
+      const validRows=rows=>Array.isArray(rows) && rows.every(row=>
+        row && typeof row.id==="string" && typeof row.title==="string");
+      if(!validRows(posts.data) || !validRows(series.data)) throw new Error("invalid_archive_data");
+      // A late response must never overwrite edits or an in-flight save.
+      if(revision!==writeRevision || baseline!==JSON.stringify([state.posts,state.series]) ||
+        document.querySelector("#postEditor.open,#seriesManager.open")) return;
+      if(JSON.stringify([posts.data,series.data])===baseline) return;
+      state.posts=posts.data;
+      state.series=series.data;
       renderAll();
+      if(typeof renderSeriesPreviewPosts==="function") renderSeriesPreviewPosts();
     }catch(err){
       console.error("원격 아카이브 데이터 불러오기 실패",err);
       toast("GitHub 데이터 연결에 실패해 현재 저장본을 표시합니다.");
@@ -129,6 +157,7 @@
   });
 
   async function submitLogin(){
+    if(document.querySelector("#adminLoginSubmit")?.disabled) return;
     const input=document.querySelector("#adminPasswordInput");
     const password=input?.value||"";
     if(!password){
@@ -145,7 +174,7 @@
       toast("관리자 로그인했습니다.");
     }catch(err){
       console.error(err);
-      toast("비밀번호가 맞지 않습니다.");
+      toast(err.name==="AbortError" ? "연결 시간이 초과되었습니다. 다시 시도해 주세요." : "로그인에 실패했습니다. 비밀번호와 연결 상태를 확인해 주세요.");
       input?.select();
     }finally{
       submit.disabled=false;
@@ -205,5 +234,10 @@
   });
 
   setAdminState(!!getToken());
-  loadRemoteData();
+  // Initialize local UI first; never wait for images or the window load event.
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",()=>setTimeout(loadRemoteData,0),{once:true});
+  }else{
+    setTimeout(loadRemoteData,0);
+  }
 })();

@@ -1,6 +1,9 @@
 /* 포스트 수정실에서 원본 textarea/중복 리치 편집기가 함께 보이는 문제 방지 */
 (() => {
   function normalizeEditorBody(){
+    // Do not observe our own attribute writes: they otherwise queue forever.
+    observer?.disconnect();
+    try{
     const textarea=document.querySelector("#editorBody");
     if(textarea){
       textarea.hidden=true;
@@ -21,15 +24,14 @@
     if(richEditors.length>1){
       richEditors.slice(1).forEach(el=>el.remove());
     }
+    }finally{
+      if(editor) observer?.observe(editor,{childList:true,subtree:true,attributes:true,attributeFilter:["class","hidden","style"]});
+    }
   }
-
-  normalizeEditorBody();
 
   const editor=document.querySelector("#postEditor");
-  if(editor){
-    const observer=new MutationObserver(normalizeEditorBody);
-    observer.observe(editor,{childList:true,subtree:true,attributes:true,attributeFilter:["class","hidden","style"]});
-  }
+  const observer=editor ? new MutationObserver(normalizeEditorBody) : null;
+  normalizeEditorBody();
 
   document.querySelector("#writeBtn")?.addEventListener("click",()=>setTimeout(normalizeEditorBody,0));
   document.querySelector("#archiveEditorTrigger")?.addEventListener("click",()=>setTimeout(normalizeEditorBody,0));

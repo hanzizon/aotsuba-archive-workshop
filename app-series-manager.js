@@ -230,7 +230,7 @@
     if(e.key==="Escape" && modal.classList.contains("open")) closeManager();
   });
 
-  window.addEventListener("load",()=>setTimeout(loadSeriesEdits,0));
+  loadSeriesEdits();
 })();
 
 /* 포스트 열람 상단 수정/닫기 정렬 */
@@ -290,22 +290,5 @@
     };
   }
 
-  window.addEventListener("load",ensureTopActions);
-})();
-
-/* 추가 기능 파일 로드 */
-(() => {
-  if(!document.querySelector('link[href="./styles-archive-features.css"]')){
-    const link=document.createElement("link");
-    link.rel="stylesheet";
-    link.href="./styles-archive-features.css";
-    document.head.append(link);
-  }
-  ["./app-publishing.js","./app-series-order.js"].forEach(src=>{
-    if(document.querySelector(`script[src="${src}"]`)) return;
-    const script=document.createElement("script");
-    script.src=src;
-    script.defer=true;
-    document.body.append(script);
-  });
+  ensureTopActions();
 })();

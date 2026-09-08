@@ -36,9 +36,12 @@ function escapeHtml(value=""){
     .replaceAll('"',"&quot;");
 }
 
-async function loadData(){
-  state.posts = EMBEDDED_POSTS;
-  state.series = EMBEDDED_SERIES;
+let dataInitialized=false;
+function loadData(){
+  if(dataInitialized) return;
+  dataInitialized=true;
+  state.posts = structuredClone(EMBEDDED_POSTS);
+  state.series = structuredClone(EMBEDDED_SERIES);
   renderAll();
 }
 
@@ -380,6 +383,3 @@ $("#previewContent").addEventListener("click",e=>{
 
 document.querySelectorAll("[data-close-preview]").forEach(el=>el.addEventListener("click",closePreview));
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("#previewModal").hidden) closePreview();});
-
-
-

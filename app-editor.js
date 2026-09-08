@@ -266,7 +266,9 @@ $("#editorPublishBtn")?.addEventListener("click",()=>{
   toast("게시 기능은 다음 단계에서 GitHub 저장과 연결할 예정입니다.");
 });
 
-loadData().catch(err => {
+try{
+  loadData();
+}catch(err){
   console.error(err);
   toast("아카이브 데이터를 불러오지 못했습니다.");
-});
+}
