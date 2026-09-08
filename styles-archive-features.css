@@ -1,0 +1,129 @@
+/* 작성실 배경 이미지 + 시리즈/포스트 순서 관리 */
+
+/* 작성실에서도 기존 이미지 ON/OFF · 이미지 순환 버튼을 그대로 사용 */
+body:has(.post-editor.open) .aotsuba-bg{
+  z-index:119;
+}
+.post-editor{
+  background:rgba(246,247,251,.88);
+}
+.post-editor-shell{
+  position:relative;
+  z-index:1;
+}
+
+/* 시리즈 순서 */
+.series-order-field select{
+  width:100%;
+  border:1px solid var(--line);
+  border-radius:9px;
+  padding:8px 34px 8px 10px;
+  background:#fff;
+  color:var(--text);
+  font-size:13px;
+  outline:none;
+}
+.series-order-field select:focus{
+  border-color:var(--accent-mid);
+  box-shadow:0 0 0 3px rgba(75,80,204,.09);
+}
+
+/* 시리즈 설정 안의 포스트 순서 */
+.series-post-order-section{
+  margin-top:14px;
+  padding-top:14px;
+  border-top:1px solid var(--line);
+}
+.series-post-order-head{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:9px;
+}
+.series-post-order-head strong{
+  font-size:12px;
+  color:var(--text);
+}
+.series-post-order-head span{
+  color:var(--muted);
+  font-size:10px;
+}
+.series-post-order-list{
+  border:1px solid var(--line);
+  border-radius:10px;
+  overflow:hidden;
+  background:#fff;
+}
+.series-post-order-row{
+  display:grid;
+  grid-template-columns:48px minmax(0,1fr) auto;
+  align-items:center;
+  gap:10px;
+  min-height:44px;
+  padding:7px 9px;
+  border-bottom:1px solid var(--line);
+}
+.series-post-order-row:last-child{border-bottom:0}
+.series-post-order-num{
+  color:var(--accent-mid);
+  font-size:11px;
+  font-weight:800;
+}
+.series-post-order-title{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:12px;
+  font-weight:700;
+}
+.series-post-order-actions{
+  display:flex;
+  gap:5px;
+}
+.series-post-move-btn{
+  width:30px;
+  height:30px;
+  padding:0;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:#fff;
+  color:var(--accent);
+  font-size:14px;
+  font-weight:800;
+}
+.series-post-move-btn:hover:not(:disabled){
+  border-color:#D9D9F2;
+  box-shadow:0 6px 16px rgba(25,30,50,.08);
+  transform:translateY(-1px);
+}
+.series-post-move-btn:active:not(:disabled),
+.series-post-move-btn.press-active:not(:disabled){
+  box-shadow:0 3px 8px rgba(25,30,50,.10),inset 0 1px 2px rgba(25,30,50,.06);
+  transform:translateY(1px);
+}
+.series-post-move-btn:disabled{
+  opacity:.32;
+  cursor:default;
+  box-shadow:none;
+  transform:none;
+}
+.series-post-order-empty{
+  padding:14px;
+  color:#9CA3AF;
+  font-size:12px;
+  text-align:center;
+}
+
+@media(max-width:760px){
+  .series-post-order-head{
+    align-items:flex-start;
+    flex-direction:column;
+    gap:3px;
+  }
+  .series-post-order-row{
+    grid-template-columns:42px minmax(0,1fr) auto;
+    gap:7px;
+  }
+}
