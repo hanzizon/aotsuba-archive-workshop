@@ -40,13 +40,21 @@
   modal.innerHTML=`
     <div class="series-manager-shell">
       <div class="series-manager-top">
-        <strong>시리즈 관리</strong>
+        <div class="series-manager-brand-block">
+          <div class="series-manager-brand">아오츠바 아카이브</div>
+          <div class="series-manager-subtitle">시리즈 관리</div>
+        </div>
         <button type="button" class="ghost-btn series-manager-close">닫기</button>
+      </div>
+      <div class="series-manager-toolbar">
+        <button type="button" class="ghost-btn series-reorder-toggle">시리즈 순서 변경</button>
       </div>
       <div class="series-manager-list" id="seriesManagerList"></div>
     </div>
   `;
   document.body.append(modal);
+
+  let reorderMode=false;
 
   function pressFx(btn){
     if(!btn) return;
@@ -56,15 +64,18 @@
     setTimeout(()=>btn.classList.remove("press-active"),170);
   }
 
+  function sortedSeries(){
+    return state.series.slice().sort((a,b)=>(a.order??999)-(b.order??999));
+  }
+
   function renderManager(){
     const list=modal.querySelector("#seriesManagerList");
-    list.innerHTML=state.series
-      .slice()
-      .sort((a,b)=>(a.order??999)-(b.order??999))
-      .map(series=>{
+    const ordered=sortedSeries();
+    list.innerHTML=ordered
+      .map((series,index)=>{
         const count=state.posts.filter(p=>p.seriesId===series.id).length;
         return `
-          <article class="series-manager-item" data-series-id="${escapeHtml(series.id)}">
+          <article class="series-manager-item${reorderMode?" reorder-mode":""}" data-series-id="${escapeHtml(series.id)}">
             <div class="series-manager-thumb">
               ${series.thumbnail?`<img src="${escapeHtml(series.thumbnail)}" alt="">`:""}
             </div>
@@ -73,7 +84,12 @@
               <p>${escapeHtml(series.description||"")}</p>
               <span>${count}개의 포스트</span>
             </div>
-            <button type="button" class="series-gear-btn" aria-label="${escapeHtml(series.title)} 설정">⚙</button>
+            ${reorderMode ? `
+              <div class="series-reorder-actions">
+                <button type="button" class="series-move-btn" data-move="left" aria-label="왼쪽으로 이동" ${index===0?"disabled":""}>←</button>
+                <button type="button" class="series-move-btn" data-move="right" aria-label="오른쪽으로 이동" ${index===ordered.length-1?"disabled":""}>→</button>
+              </div>
+            ` : `<button type="button" class="series-gear-btn" aria-label="${escapeHtml(series.title)} 설정">⚙</button>`}
             <div class="series-edit-panel" hidden>
               <label>
                 <span>제목</span>
@@ -97,7 +113,24 @@
       }).join("") || `<div class="empty-state">아직 시리즈가 없습니다.</div>`;
   }
 
+  function moveSeries(seriesId,direction){
+    const ordered=sortedSeries();
+    const index=ordered.findIndex(s=>s.id===seriesId);
+    if(index<0) return;
+    const target=direction==="left"?index-1:index+1;
+    if(target<0 || target>=ordered.length) return;
+    [ordered[index],ordered[target]]=[ordered[target],ordered[index]];
+    ordered.forEach((series,i)=>{series.order=i+1;});
+    saveSeriesEdits();
+    renderSeries();
+    populateEditorSeries();
+    renderManager();
+    toast("시리즈 순서를 변경했습니다.");
+  }
+
   function openManager(){
+    reorderMode=false;
+    modal.querySelector(".series-reorder-toggle").textContent="시리즈 순서 변경";
     renderManager();
     modal.classList.add("open");
     modal.setAttribute("aria-hidden","false");
@@ -116,14 +149,29 @@
     pressFx(manageBtn);
     setTimeout(openManager,80);
   },true);
+
   modal.querySelector(".series-manager-close")?.addEventListener("click",e=>{
     pressFx(e.currentTarget);
     setTimeout(closeManager,80);
   });
 
+  modal.querySelector(".series-reorder-toggle")?.addEventListener("click",e=>{
+    pressFx(e.currentTarget);
+    reorderMode=!reorderMode;
+    e.currentTarget.textContent=reorderMode?"순서 변경 완료":"시리즈 순서 변경";
+    renderManager();
+  });
+
   modal.addEventListener("click",e=>{
     const item=e.target.closest(".series-manager-item");
     if(!item) return;
+
+    const move=e.target.closest(".series-move-btn");
+    if(move){
+      pressFx(move);
+      moveSeries(item.dataset.seriesId,move.dataset.move);
+      return;
+    }
 
     const gear=e.target.closest(".series-gear-btn");
     if(gear){
