@@ -1,0 +1,82 @@
+/* 아오츠바 아카이브 추가 UI 조정 */
+
+/* 시리즈 카드: 호버 그림자를 조금 더 진하게, 주변에서 잘리지 않게 여유 확보 */
+.series-scroller{
+  padding:14px 18px 22px !important;
+  margin:-14px -18px -12px;
+}
+.series-card{
+  position:relative;
+  transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.series-card:hover{
+  z-index:3;
+  transform:translateY(-2px);
+  border-color:#D9D9F2;
+  box-shadow:0 12px 32px rgba(25,30,50,.16) !important;
+}
+.series-card.tap-active{
+  transform:translateY(1px) scale(.992);
+}
+
+/* 포스트 작성실 포맷 도구 */
+.editor-format-row{
+  gap:8px;
+}
+.editor-align-group{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  margin-left:2px;
+}
+.editor-format-btn{
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:6px 8px;
+  background:#fff;
+  color:var(--accent);
+  font-size:12px;
+  font-weight:700;
+  line-height:1.2;
+  cursor:pointer;
+  transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease, background .15s ease;
+}
+.editor-format-btn:hover{
+  border-color:#c9cce0;
+}
+.editor-format-btn.active,
+.editor-format-btn:active{
+  background:var(--accent-soft);
+  color:var(--accent-mid);
+  border-color:#D9D9F2;
+  box-shadow:0 3px 8px rgba(25,30,50,.10), inset 0 1px 2px rgba(25,30,50,.06);
+  transform:translateY(1px);
+}
+.editor-format-divider{
+  width:1px;
+  height:22px;
+  background:var(--line);
+  margin:0 2px;
+  flex:0 0 auto;
+}
+
+/* 실제 포스트 열람 화면의 구분선 */
+.preview-body .post-divider{
+  border:0;
+  border-top:1px solid var(--line);
+  margin:24px 0;
+}
+
+@media(max-width:760px){
+  .series-scroller{
+    padding:12px 14px 20px !important;
+    margin:-12px -14px -10px;
+  }
+  .editor-align-group{
+    flex-wrap:wrap;
+  }
+  .editor-format-btn{
+    font-size:11px;
+    padding:6px 7px;
+  }
+}
