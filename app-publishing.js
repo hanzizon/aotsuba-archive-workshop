@@ -14,6 +14,16 @@
     }
   }
 
+  function readPostEdits(){
+    try{
+      const raw=localStorage.getItem(POST_EDIT_KEY);
+      const edits=raw ? JSON.parse(raw) : {};
+      return edits && typeof edits==="object" ? edits : {};
+    }catch(_e){
+      return {};
+    }
+  }
+
   function writePublished(rows){
     try{
       localStorage.setItem(PUBLISHED_KEY,JSON.stringify(rows));
@@ -27,10 +37,11 @@
   function loadPublished(){
     const saved=readPublished();
     if(!saved.length) return;
+    const edits=readPostEdits();
     const ids=new Set(state.posts.map(post=>post.id));
     saved.forEach(post=>{
       if(!post?.id || ids.has(post.id)) return;
-      state.posts.push(post);
+      state.posts.push(edits[post.id] ? {...post,...edits[post.id]} : post);
       ids.add(post.id);
     });
     renderAll();
@@ -117,7 +128,6 @@
     },true);
   }
 
-  /* 수정 모드가 끝나면 버튼 문구를 게시!로 복구 */
   ["#writeBtn","#archiveEditorTrigger","#editorCloseBtn"].forEach(sel=>{
     document.querySelector(sel)?.addEventListener("click",()=>{
       setTimeout(()=>{
