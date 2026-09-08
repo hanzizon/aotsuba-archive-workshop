@@ -192,6 +192,11 @@ button.press-active{
   font-size:12px;
 }
 
+/* 리치 텍스트 편집기 전환 후 원본 textarea는 절대 보이지 않게 */
+#editorBody[hidden]{
+  display:none !important;
+}
+
 @media(max-width:760px){
   .series-scroller{
     padding:12px 14px 20px !important;
