@@ -10,6 +10,30 @@
   <link rel="stylesheet" href="./styles-main.css">
   <link rel="stylesheet" href="./styles-editor.css">
   <link rel="stylesheet" href="./styles-workshop-sync.css">
+  <style>
+    .post-preview-actions{
+      display:flex;
+      justify-content:flex-end;
+      margin:0 0 12px;
+    }
+    .post-edit-btn{
+      border:1px solid var(--line);
+      border-radius:10px;
+      padding:8px 11px;
+      background:#fff;
+      color:var(--accent);
+      font-size:13px;
+      font-weight:700;
+      cursor:pointer;
+      transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease;
+    }
+    .post-edit-btn:hover{border-color:#c9cce0}
+    .post-edit-btn.press-active{
+      border-color:#D9D9F2;
+      box-shadow:0 3px 8px rgba(25,30,50,.10),inset 0 1px 2px rgba(25,30,50,.06);
+      transform:translateY(1px);
+    }
+  </style>
 </head>
 <body>
   <header class="site-header">
@@ -27,8 +51,6 @@
   </header>
 
   <main class="page-shell">
-
-
     <section class="section-block">
       <div class="section-head">
         <div>
@@ -45,8 +67,6 @@
       <span>아오츠바 아카이브.</span>
     </footer>
   </main>
-
-
 
   <section class="post-editor" id="postEditor" aria-hidden="true">
     <div class="post-editor-shell">
@@ -109,7 +129,6 @@
     </article>
   </div>
 
-  
   <img class="aotsuba-bg is-off" id="aotsubaBg" src="./aotsuba-bg.png" alt="" aria-hidden="true">
   <button type="button" class="bg-image-toggle" id="bgImageToggle" aria-pressed="false">이미지 OFF</button>
 
@@ -117,5 +136,121 @@
 
   <script src="./app-core.js"></script>
   <script src="./app-editor.js"></script>
+  <script>
+    (()=>{
+      const POST_EDIT_KEY="aotsubaArchive.postEdits.v1";
+      let editingPostId=null;
+      const originalOpenPostPreview=openPostPreview;
+      const originalClosePostEditor=closePostEditor;
+
+      function loadPostEdits(){
+        try{
+          const raw=localStorage.getItem(POST_EDIT_KEY);
+          if(!raw) return;
+          const edits=JSON.parse(raw);
+          if(!edits || typeof edits!=="object") return;
+          state.posts=state.posts.map(post=>edits[post.id] ? {...post,...edits[post.id]} : post);
+          renderAll();
+        }catch(err){
+          console.error("수정 포스트 불러오기 실패",err);
+        }
+      }
+
+      function savePostEdit(post){
+        try{
+          const raw=localStorage.getItem(POST_EDIT_KEY);
+          const edits=raw ? JSON.parse(raw) : {};
+          edits[post.id]={
+            title:post.title,
+            seriesId:post.seriesId,
+            tags:post.tags,
+            body:post.body
+          };
+          localStorage.setItem(POST_EDIT_KEY,JSON.stringify(edits));
+        }catch(err){
+          console.error("수정 포스트 저장 실패",err);
+        }
+      }
+
+      function setEditorMode(post=null){
+        editingPostId=post?.id || null;
+        const heading=document.querySelector(".post-editor-heading");
+        const submit=document.querySelector("#editorPublishBtn");
+        if(heading) heading.textContent=editingPostId ? "포스트 수정실" : "포스트 작성실";
+        if(submit) submit.textContent=editingPostId ? "수정 저장" : "게시 준비";
+      }
+
+      function openPostEditorForEdit(post){
+        if(!post) return;
+        populateEditorSeries();
+        setEditorMode(post);
+
+        document.querySelector("#editorTitle").value=cleanPostTitle(post.title||"");
+        document.querySelector("#editorSeries").value=post.seriesId||"";
+        document.querySelector("#editorTags").value=(post.tags||[]).join(", ");
+        document.querySelector("#editorBody").value=post.body||"";
+        document.querySelector("#editorFontSize").value=getDefaultEditorFontSize();
+        applyEditorTypography();
+
+        const editor=document.querySelector("#postEditor");
+        editor.classList.add("open");
+        editor.setAttribute("aria-hidden","false");
+        document.querySelector("#archiveEditorTrigger")?.setAttribute("aria-expanded","true");
+        document.body.style.overflow="hidden";
+        setTimeout(()=>document.querySelector("#editorTitle")?.focus(),40);
+      }
+
+      openPostPreview=function(post){
+        originalOpenPostPreview(post);
+        const content=document.querySelector("#previewContent");
+        if(!content) return;
+        const actions=document.createElement("div");
+        actions.className="post-preview-actions";
+        actions.innerHTML='<button type="button" class="post-edit-btn">수정</button>';
+        content.prepend(actions);
+        actions.querySelector(".post-edit-btn")?.addEventListener("click",e=>{
+          pulsePress(e.currentTarget);
+          closePreview();
+          setTimeout(()=>openPostEditorForEdit(post),80);
+        });
+      };
+
+      const submit=document.querySelector("#editorPublishBtn");
+      submit?.addEventListener("click",e=>{
+        if(!editingPostId) return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+
+        const idx=state.posts.findIndex(p=>p.id===editingPostId);
+        if(idx<0) return;
+
+        const current=state.posts[idx];
+        const updated={
+          ...current,
+          title:(document.querySelector("#editorTitle")?.value||"").trim(),
+          seriesId:document.querySelector("#editorSeries")?.value||"",
+          tags:(document.querySelector("#editorTags")?.value||"")
+            .split(",")
+            .map(v=>v.trim())
+            .filter(Boolean),
+          body:document.querySelector("#editorBody")?.value||""
+        };
+
+        state.posts[idx]=updated;
+        savePostEdit(updated);
+        renderAll();
+        toast("포스트를 수정했습니다.");
+        setEditorMode(null);
+        originalClosePostEditor();
+        setTimeout(()=>openPostPreview(updated),100);
+      },true);
+
+      document.querySelector("#editorCloseBtn")?.addEventListener("click",()=>setEditorMode(null),true);
+      document.querySelector("#writeBtn")?.addEventListener("click",()=>setEditorMode(null),true);
+      document.querySelector("#archiveEditorTrigger")?.addEventListener("click",()=>setEditorMode(null),true);
+
+      loadPostEdits();
+    })();
+  </script>
 </body>
 </html>
