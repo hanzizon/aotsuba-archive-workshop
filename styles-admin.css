@@ -1,0 +1,101 @@
+/* 관리자 로그인 / 읽기 전용 모드 */
+body:not(.is-admin) #seriesManageBtn,
+body:not(.is-admin) #writeBtn,
+body:not(.is-admin) .post-edit-btn,
+body:not(.is-admin) #previewTopEditBtn{
+  display:none !important;
+}
+
+body:not(.is-admin) .archive-editor-trigger{
+  cursor:default;
+}
+
+.admin-session-btn{
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:9px 12px;
+  background:#fff;
+  color:var(--muted);
+  font-size:12px;
+  font-weight:700;
+  cursor:pointer;
+}
+.admin-session-btn:hover{
+  color:var(--accent);
+  border-color:#D9D9F2;
+  box-shadow:0 6px 16px rgba(25,30,50,.08);
+  transform:translateY(-1px);
+}
+.admin-session-btn:active,
+.admin-session-btn.press-active{
+  box-shadow:0 3px 8px rgba(25,30,50,.10),inset 0 1px 2px rgba(25,30,50,.06);
+  transform:translateY(1px);
+}
+
+.admin-login-modal[hidden]{display:none}
+.admin-login-modal{
+  position:fixed;
+  inset:0;
+  z-index:320;
+  display:grid;
+  place-items:center;
+  padding:20px;
+}
+.admin-login-backdrop{
+  position:absolute;
+  inset:0;
+  background:rgba(22,24,29,.28);
+  backdrop-filter:blur(3px);
+  -webkit-backdrop-filter:blur(3px);
+}
+.admin-login-card{
+  position:relative;
+  width:min(390px,100%);
+  padding:22px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:#fff;
+  box-shadow:0 18px 55px rgba(25,30,50,.16);
+}
+.admin-login-title{
+  margin:0;
+  font-size:15px;
+  font-weight:800;
+  color:var(--text);
+}
+.admin-login-desc{
+  margin:7px 0 16px;
+  font-size:12px;
+  line-height:1.6;
+  color:var(--muted);
+}
+.admin-login-input{
+  width:100%;
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:10px 12px;
+  outline:none;
+  background:#fff;
+  color:var(--text);
+  font-size:13px;
+}
+.admin-login-input:focus{
+  border-color:var(--accent-mid);
+  box-shadow:0 0 0 3px rgba(75,80,204,.09);
+}
+.admin-login-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+  margin-top:16px;
+}
+.admin-login-actions button{
+  font-size:13px;
+}
+
+@media(max-width:760px){
+  .admin-session-btn{
+    padding:7px 9px;
+    font-size:11px;
+  }
+}
