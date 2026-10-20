@@ -1,6 +1,7 @@
 const ALLOWED_ORIGIN = "https://hanzizon.github.io";
 const REPO = "hanzizon/aotsuba-archive-workshop";
 const BRANCH = "main";
+const SESSION_TTL = 3 * 60 * 60;
 const FILES = {
   posts: "data/posts.json",
   series: "data/series.json"
@@ -12,7 +13,20 @@ export default {
     const cors = corsHeaders(request);
 
     if (request.method === "OPTIONS") {
+      const methods = url.pathname === "/login" ? ["POST"] :
+        /^\/data\/(posts|series)$/.test(url.pathname) ? ["GET","PUT"] :
+        url.pathname === "/health" ? ["GET"] : [];
+      const headers = (request.headers.get("Access-Control-Request-Headers") || "")
+        .split(",").map(value => value.trim().toLowerCase()).filter(Boolean);
+      if (request.headers.get("Origin") !== ALLOWED_ORIGIN ||
+          !methods.includes(request.headers.get("Access-Control-Request-Method")) ||
+          headers.some(header => !["content-type","authorization"].includes(header))) {
+        return json({ ok: false, error: "preflight_denied" }, 403, cors);
+      }
       return new Response(null, { status: 204, headers: cors });
+    }
+    if (request.headers.has("Origin") && request.headers.get("Origin") !== ALLOWED_ORIGIN) {
+      return json({ ok: false, error: "origin_denied" }, 403, cors);
     }
 
     try {
@@ -21,12 +35,34 @@ export default {
       }
 
       if (url.pathname === "/login" && request.method === "POST") {
+        if (!env.ADMIN_PASSWORD || !validSecret(env.SESSION_SECRET) || !env.LOGIN_LIMITER) {
+          return json({ ok: false, error: "login_unavailable" }, 503, cors);
+        }
+        // Cloudflare supplies this header. Never use caller-supplied X-Forwarded-For.
+        const ip = request.headers.get("CF-Connecting-IP");
+        if (!ip) return json({ ok: false, error: "login_unavailable" }, 503, cors);
+        const limiter = env.LOGIN_LIMITER.get(env.LOGIN_LIMITER.idFromName("admin-login-v1"));
+        let limit;
+        try {
+          const response = await limiter.fetch("https://limiter/check", {
+            method: "POST", body: await hmac(ip, env.SESSION_SECRET)
+          });
+          if (!response.ok) throw new Error("limiter_unavailable");
+          limit = await response.json();
+          if (typeof limit.allowed !== "boolean") throw new Error("limiter_invalid");
+        } catch (_) {
+          return json({ ok: false, error: "login_unavailable" }, 503, cors);
+        }
+        if (!limit.allowed) return json({ ok: false, error: "rate_limited" }, 429,
+          { ...cors, "Retry-After": String(limit.retryAfter) });
         const body = await request.json().catch(() => ({}));
-        if (!body.password || body.password !== env.ADMIN_PASSWORD) {
+        if (typeof body?.password !== "string" || !body.password ||
+            !timingSafeEqual(await hmac(body.password, env.SESSION_SECRET),
+              await hmac(env.ADMIN_PASSWORD, env.SESSION_SECRET))) {
           return json({ ok: false, error: "invalid_password" }, 401, cors);
         }
         const token = await createSessionToken(env.SESSION_SECRET);
-        return json({ ok: true, token, expiresIn: 43200 }, 200, cors);
+        return json({ ok: true, token, expiresIn: SESSION_TTL }, 200, cors);
       }
 
       const match = url.pathname.match(/^\/data\/(posts|series)$/);
@@ -63,7 +99,7 @@ export default {
 
       return json({ ok: false, error: "not_found" }, 404, cors);
     } catch (err) {
-      console.error(err);
+      console.error("Archive request failed");
       return json({ ok: false, error: "server_error" }, 500, cors);
     }
   }
@@ -71,12 +107,13 @@ export default {
 
 function corsHeaders(request) {
   const origin = request.headers.get("Origin");
-  const allowed = origin === ALLOWED_ORIGIN ? origin : ALLOWED_ORIGIN;
+  if (origin !== ALLOWED_ORIGIN) return { "Vary": "Origin" };
   return {
-    "Access-Control-Allow-Origin": allowed,
+    "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Allow-Methods": "GET, PUT, POST, OPTIONS",
-    "Vary": "Origin"
+    "Access-Control-Expose-Headers": "Retry-After",
+    "Vary": "Origin, Access-Control-Request-Method, Access-Control-Request-Headers"
   };
 }
 
@@ -117,8 +154,7 @@ async function githubWriteFile(token, path, text, message) {
     })
   });
   if (!res.ok) {
-    const detail = await res.text();
-    throw new Error(`GitHub write failed: ${res.status} ${detail}`);
+    throw new Error(`GitHub write failed: ${res.status}`);
   }
 }
 
@@ -133,7 +169,8 @@ function githubHeaders(token) {
 
 async function createSessionToken(secret) {
   const payload = {
-    exp: Math.floor(Date.now() / 1000) + 43200,
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + SESSION_TTL,
     nonce: crypto.randomUUID()
   };
   const body = base64Url(JSON.stringify(payload));
@@ -142,15 +179,50 @@ async function createSessionToken(secret) {
 }
 
 async function verifySessionToken(token, secret) {
+  if (!validSecret(secret) || token.length > 2048 || token.split(".").length !== 2) return false;
   const [body, sig] = token.split(".");
   if (!body || !sig) return false;
   const expected = await hmac(body, secret);
   if (!timingSafeEqual(sig, expected)) return false;
   try {
     const payload = JSON.parse(base64UrlDecode(body));
-    return Number(payload.exp) > Math.floor(Date.now() / 1000);
+    const now = Math.floor(Date.now() / 1000);
+    return Number.isInteger(payload.iat) && Number.isInteger(payload.exp) &&
+      payload.iat <= now && payload.exp > now && payload.exp > payload.iat &&
+      payload.exp - payload.iat <= SESSION_TTL;
   } catch {
     return false;
+  }
+}
+
+function validSecret(secret) {
+  return typeof secret === "string" && secret.length >= 32;
+}
+
+// One globally addressed object serializes attempts from every Worker instance.
+// SQLite persists counters through eviction/restarts; no eventually consistent KV.
+export class LoginLimiter {
+  constructor(ctx) {
+    this.storage = ctx.storage;
+    this.storage.sql.exec("CREATE TABLE IF NOT EXISTS attempts (ip TEXT NOT NULL, at INTEGER NOT NULL)");
+  }
+  async fetch(request) {
+    const ip = await request.text();
+    const now = Date.now(), windowMs = 15 * 60 * 1000;
+    const result = this.storage.transactionSync(() => {
+      const sql = this.storage.sql;
+      sql.exec("DELETE FROM attempts WHERE at <= ?", now - windowMs);
+      const rows = [...sql.exec("SELECT ip, at FROM attempts ORDER BY at")];
+      const own = rows.filter(row => row.ip === ip);
+      if (rows.length >= 50 || own.length >= 5) {
+        const until = Math.max(rows.length >= 50 ? rows[0].at : 0,
+          own.length >= 5 ? own[0].at : 0) + windowMs;
+        return { allowed: false, retryAfter: Math.max(1, Math.ceil((until - now) / 1000)) };
+      }
+      sql.exec("INSERT INTO attempts (ip, at) VALUES (?, ?)", ip, now);
+      return { allowed: true };
+    });
+    return json(result);
   }
 }
 

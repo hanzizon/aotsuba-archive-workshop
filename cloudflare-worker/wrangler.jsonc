@@ -3,5 +3,11 @@
   "name": "aotsuba-archive-admin",
   "main": "worker.js",
   "compatibility_date": "2026-09-08",
-  "workers_dev": true
+  "workers_dev": true,
+  "durable_objects": {
+    "bindings": [{ "name": "LOGIN_LIMITER", "class_name": "LoginLimiter" }]
+  },
+  "migrations": [
+    { "tag": "v1-login-limiter", "new_sqlite_classes": ["LoginLimiter"] }
+  ]
 }

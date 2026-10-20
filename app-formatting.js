@@ -37,7 +37,7 @@
 
   function richHtmlToPlainText(html){
     const box=document.createElement("div");
-    box.innerHTML=html||"";
+    box.innerHTML=sanitizeArchiveHtml(html);
     box.querySelectorAll("hr").forEach(hr=>hr.replaceWith(document.createTextNode("\n---\n")));
     box.querySelectorAll("p,div").forEach(el=>{
       if(el.nextSibling) el.append(document.createTextNode("\n\n"));
@@ -71,13 +71,19 @@
   applyTypography();
 
   window.archivePlainTextToHtml=plainTextToHtml;
-  window.getArchiveEditorHtml=()=>rich.innerHTML;
+  window.getArchiveEditorHtml=()=>sanitizeArchiveHtml(rich.innerHTML);
   window.setArchiveEditorHtml=(html)=>{
-    rich.innerHTML=html && String(html).trim() ? html : plainTextToHtml(textarea.value||"");
+    rich.innerHTML=sanitizeArchiveHtml(html && String(html).trim() ? html : plainTextToHtml(textarea.value||""));
     syncPlain();
     applyTypography();
   };
 
+  // Block native rich-HTML drops before they enter the live editor.
+  rich.addEventListener("drop",e=>{
+    e.preventDefault();
+    rich.focus();
+    document.execCommand("insertText",false,e.dataTransfer?.getData("text/plain")||"");
+  });
   rich.addEventListener("input",syncPlain);
   rich.addEventListener("paste",e=>{
     e.preventDefault();
@@ -232,7 +238,7 @@
   if(editor) observer.observe(editor,{attributes:true,attributeFilter:["class"]});
 
   window.renderArchivePostBody=(post)=>{
-    if(post?.bodyHtml) return post.bodyHtml;
+    if(post?.bodyHtml) return sanitizeArchiveHtml(post.bodyHtml);
     return plainTextToHtml(post?.body||"");
   };
 })();

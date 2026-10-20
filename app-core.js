@@ -80,7 +80,7 @@ function toast(message){
 function formatDate(value){
   if(!value) return "";
   const d = new Date(value);
-  if(Number.isNaN(d.getTime())) return value;
+  if(Number.isNaN(d.getTime())) return escapeHtml(value);
   return new Intl.DateTimeFormat("ko-KR", {
     year:"numeric", month:"2-digit", day:"2-digit"
   }).format(d);
@@ -115,7 +115,7 @@ function renderSeries(){
     .map((series, index) => {
       const count = state.posts.filter(p => p.seriesId === series.id).length;
       const thumb = series.thumbnail
-        ? `<img src="${escapeHtml(series.thumbnail)}" alt="">`
+        ? `<img src="${escapeHtml(archiveSafeImageUrl(series.thumbnail))}" alt="">`
         : "";
       return `
         <article class="series-card" data-series-id="${escapeHtml(series.id)}">
