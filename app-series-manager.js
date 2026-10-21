@@ -42,7 +42,7 @@
     modal.querySelector(".series-manager-toolbar").hidden=!isAdmin();
     modal.querySelector("#seriesManagerList").innerHTML=sortedSeries().map((series,index,rows)=>`
       <article class="series-manager-item" data-series-id="${escapeHtml(series.id)}">
-        <div class="series-manager-thumb">${series.thumbnail?`<img src="${escapeHtml(series.thumbnail)}" alt="">`:""}</div>
+        <div class="series-manager-thumb">${series.thumbnail?`<img src="${escapeHtml(archiveSafeImageUrl(series.thumbnail))}" alt="">`:""}</div>
         <div class="series-manager-info"><strong>${escapeHtml(series.title)}</strong>
           <p>${escapeHtml(series.description||"")}</p>${seriesMetadata(series)}
           <span>${state.posts.filter(p=>p.seriesId===series.id).length}개의 포스트</span></div>

@@ -15,8 +15,13 @@
   }
 
   function getToken(){
-    if(token) return token;
-    try{ token=sessionStorage.getItem(SESSION_KEY)||""; }catch(_e){}
+    if(!token) try{ token=sessionStorage.getItem(SESSION_KEY)||""; }catch(_e){}
+    if(token){
+      try{
+        const payload=JSON.parse(atob(token.split(".")[0].replace(/-/g,"+").replace(/_/g,"/")));
+        if(!Number.isInteger(payload.exp) || payload.exp<=Date.now()/1000) setToken("");
+      }catch(_e){ setToken(""); }
+    }
     return token;
   }
 
@@ -44,7 +49,10 @@
       method,
       headers,
       body:body===undefined?undefined:JSON.stringify(body),
-      signal:controller.signal
+      signal:controller.signal,
+      redirect:"error",
+      credentials:"omit",
+      referrerPolicy:"no-referrer"
     });
     const data=await res.json().catch(()=>({}));
     if(res.status===401){
@@ -175,7 +183,8 @@
       toast("관리자 로그인했습니다.");
     }catch(err){
       console.error(err);
-      toast(err.name==="AbortError" ? "연결 시간이 초과되었습니다. 다시 시도해 주세요." : "로그인에 실패했습니다. 비밀번호와 연결 상태를 확인해 주세요.");
+      toast(err.message==="rate_limited" ? "로그인 시도가 많습니다. 15분 후 다시 시도해 주세요." :
+        err.name==="AbortError" ? "연결 시간이 초과되었습니다. 다시 시도해 주세요." : "로그인에 실패했습니다. 비밀번호와 연결 상태를 확인해 주세요.");
       input?.select();
     }finally{
       submit.disabled=false;
