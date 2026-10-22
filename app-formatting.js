@@ -229,9 +229,11 @@
     setTimeout(()=>{
       if(window.__archiveRichSkipNextSync){
         window.__archiveRichSkipNextSync=false;
+        window.__archiveDraftHtml=null;
         return;
       }
-      rich.innerHTML=plainTextToHtml(textarea.value||"");
+      rich.innerHTML=sanitizeArchiveHtml(window.__archiveDraftHtml || plainTextToHtml(textarea.value||""));
+      window.__archiveDraftHtml=null;
       applyTypography();
     },0);
   });
