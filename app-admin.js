@@ -34,9 +34,10 @@
     setAdminState(!!token);
   }
 
-  async function api(path,{method="GET",body,auth=false,timeoutMs=15000}={}){
+  async function api(path,{method="GET",body,rawBody,auth=false,timeoutMs=15000}={}){
     const headers={};
     if(body!==undefined) headers["Content-Type"]="application/json";
+    if(rawBody) headers["Content-Type"]="audio/mpeg";
     if(auth){
       const current=getToken();
       if(!current) throw new Error("login_required");
@@ -48,7 +49,7 @@
     const res=await fetch(`${API_BASE}${path}`,{
       method,
       headers,
-      body:body===undefined?undefined:JSON.stringify(body),
+      body:rawBody || (body===undefined?undefined:JSON.stringify(body)),
       signal:controller.signal,
       redirect:"error",
       credentials:"omit",
@@ -67,6 +68,7 @@
   }
 
   window.archiveIsAdmin=()=>!!getToken();
+  window.archiveUploadAudio=file=>api("/audio",{method:"POST",rawBody:file,auth:true,timeoutMs:90000});
   window.archiveSavePosts=async function(rows=state.posts){
     writeRevision++;
     await api("/data/posts",{method:"PUT",body:rows,auth:true});

@@ -14,6 +14,7 @@
     return "";
   }
   window.archiveSafeImageUrl = value => safeUrl(value, true);
+  window.archiveSafeAudioUrl = value => /^https:\/\/aotsuba-archive-admin\.hannzizon\.workers\.dev\/audio\/[a-f0-9]{64}\.mp3$/.test(String(value || ""));
   const purifier = window.DOMPurify;
   if (purifier?.isSupported) purifier.addHook("afterSanitizeAttributes", node => {
     for (const attr of ["href","src"]) if (node.hasAttribute?.(attr)) {
@@ -22,7 +23,8 @@
       else node.removeAttribute(attr);
     }
     if (node.hasAttribute?.("class")) {
-      const value = [...node.classList].filter(name => classes.has(name)).join(" ");
+      const value = [...node.classList].filter(name => classes.has(name) ||
+        (name === "archive-audio" && node.tagName === "A" && window.archiveSafeAudioUrl(node.getAttribute("href")))).join(" ");
       if (value) node.setAttribute("class", value);
       else node.removeAttribute("class");
     }

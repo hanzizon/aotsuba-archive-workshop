@@ -51,6 +51,7 @@ function captureEditorState(){
     seriesId:$("#editorSeries")?.value || "",
     tags:$("#editorTags")?.value || "",
     body:$("#editorBody")?.value || "",
+    bodyHtml:window.getArchiveEditorHtml?.() || "",
     fontFamily:$("#editorFontFamily")?.value || "",
     fontSize:$("#editorFontSize")?.value || getDefaultEditorFontSize()
   };
@@ -93,6 +94,7 @@ function restoreEditorManualDraft(){
   $("#editorTitle").value=saved.title || "";
   $("#editorTags").value=saved.tags || "";
   $("#editorBody").value=saved.body || "";
+  window.setArchiveEditorHtml?.(saved.bodyHtml || "");
 
   const series=$("#editorSeries");
   if(series && [...series.options].some(o=>o.value===saved.seriesId)){
@@ -152,6 +154,7 @@ function loadEditorDraft(){
     $("#editorSeries").value=saved.seriesId||"";
     $("#editorTags").value=saved.tags||"";
     $("#editorBody").value=saved.body||"";
+    window.__archiveDraftHtml=saved.bodyHtml || "";
     if(saved.fontFamily && [...$("#editorFontFamily").options].some(o=>o.value===saved.fontFamily)){
       $("#editorFontFamily").value=saved.fontFamily;
     }
@@ -169,6 +172,7 @@ function saveEditorDraft(){
       seriesId:$("#editorSeries").value,
       tags:$("#editorTags").value,
       body:$("#editorBody").value,
+      bodyHtml:window.getArchiveEditorHtml?.() || "",
       fontFamily:$("#editorFontFamily").value,
       fontSize:$("#editorFontSize").value,
       savedAt:new Date().toISOString()
